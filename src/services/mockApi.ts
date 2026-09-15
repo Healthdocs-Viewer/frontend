@@ -1,5 +1,8 @@
 import {
+  AcceptConsentRequest,
   CaseSummary,
+  ConsentRecord,
+  CreateCaseRequest,
   CreateUploadIntentRequest,
   DownloadIntent,
   FileSummary,
@@ -70,6 +73,8 @@ interface MockDatabase {
     id: string;
     patientId: string;
     status: CaseSummary['status'];
+    referenceCode: string;
+    studyType: string;
     createdAt: string;
     assignedUserIds: string[];
     files: FileSummary[];
@@ -98,6 +103,8 @@ function getInitialDatabase(): MockDatabase {
         id: case1Id,
         patientId: 'b0000001-0000-0000-0000-000000000001',
         status: 'RESULT_AVAILABLE',
+        referenceCode: 'CAS-20260910-0001',
+        studyType: 'RADIOGRAFIA_TORAX',
         createdAt: '2026-09-10T14:30:00Z',
         assignedUserIds: [
           'b0000002-0000-0000-0000-000000000002',
@@ -130,6 +137,8 @@ function getInitialDatabase(): MockDatabase {
         id: case2Id,
         patientId: 'b0000001-0000-0000-0000-000000000001',
         status: 'ENABLED_FOR_PROCESSING',
+        referenceCode: 'CAS-20260914-0001',
+        studyType: 'RESONANCIA_CEREBRAL',
         createdAt: '2026-09-14T11:15:00Z',
         assignedUserIds: [
           'b0000002-0000-0000-0000-000000000002',
@@ -264,7 +273,7 @@ export const mockBackendService = {
     return found.user;
   },
 
-  async createCase(token: string): Promise<CaseSummary> {
+  async createCase(token: string, request: CreateCaseRequest): Promise<CaseSummary> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
     if (parsed.role !== 'paciente') {
@@ -272,10 +281,13 @@ export const mockBackendService = {
     }
 
     const db = loadDb();
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const newCase = {
       id: crypto.randomUUID(),
       patientId: parsed.sub,
       status: 'CREATED' as const,
+      referenceCode: `CAS-${today}-${String(db.cases.length + 1).padStart(4, '0')}`,
+      studyType: request.studyType,
       createdAt: new Date().toISOString(),
       assignedUserIds: ['b0000003-0000-0000-0000-000000000003'], // Profesor preasignado en demo
       files: [],
@@ -286,8 +298,38 @@ export const mockBackendService = {
 
     return {
       id: newCase.id,
+      referenceCode: newCase.referenceCode,
       status: newCase.status,
+      studyType: newCase.studyType,
       createdAt: newCase.createdAt,
+    };
+  },
+
+  async acceptConsent(
+    token: string,
+    caseId: string,
+    req: AcceptConsentRequest
+  ): Promise<ConsentRecord> {
+    await new Promise((r) => setTimeout(r, 180));
+    const parsed = verifyMockToken(token);
+    if (parsed.role !== 'paciente') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo paciente propietario puede aceptar términos');
+    }
+
+    const db = loadDb();
+    const targetCase = db.cases.find((c) => c.id === caseId);
+    if (!targetCase || targetCase.patientId !== parsed.sub) {
+      throw new MockHttpError(403, 'FORBIDDEN', 'No autorizado para este caso');
+    }
+    if (!req.termsVersion || req.termsVersion.trim() !== '1.0') {
+      throw new MockHttpError(400, 'VALIDATION_ERROR', 'Versión de términos inválida');
+    }
+
+    return {
+      id: crypto.randomUUID(),
+      caseId,
+      termsVersion: req.termsVersion,
+      acceptedAt: new Date().toISOString(),
     };
   },
 
@@ -303,7 +345,9 @@ export const mockBackendService = {
       .filter((c) => c.patientId === parsed.sub)
       .map((c) => ({
         id: c.id,
+        referenceCode: c.referenceCode,
         status: c.status,
+        studyType: c.studyType,
         createdAt: c.createdAt,
       }));
   },
@@ -418,7 +462,9 @@ export const mockBackendService = {
       .filter((c) => c.assignedUserIds.includes(parsed.sub))
       .map((c) => ({
         id: c.id,
+        referenceCode: c.referenceCode,
         status: c.status,
+        studyType: c.studyType,
         createdAt: c.createdAt,
         files: c.files,
       }));

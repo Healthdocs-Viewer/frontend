@@ -1,5 +1,8 @@
 import {
+  AcceptConsentRequest,
   CaseSummary,
+  ConsentRecord,
+  CreateCaseRequest,
   CreateUploadIntentRequest,
   DownloadIntent,
   ErrorResponse,
@@ -191,13 +194,13 @@ export const apiClient = {
   },
 
   patient: {
-    async createCase(): Promise<CaseSummary> {
+    async createCase(req: CreateCaseRequest): Promise<CaseSummary> {
       const token = getStoredToken();
       if (!token) throw new Error('No autenticado');
 
       if (isMockMode()) {
         try {
-          return await mockBackendService.createCase(token);
+          return await mockBackendService.createCase(token, req);
         } catch (err: any) {
           if (err instanceof MockHttpError) {
             if (err.status === 401) notifyUnauthorized();
@@ -207,7 +210,35 @@ export const apiClient = {
         }
       }
 
-      return request<CaseSummary>('/cases', { method: 'POST' });
+      return request<CaseSummary>('/cases', {
+        method: 'POST',
+        body: JSON.stringify(req),
+      });
+    },
+
+    async acceptConsent(
+      caseId: string,
+      req: AcceptConsentRequest
+    ): Promise<ConsentRecord> {
+      const token = getStoredToken();
+      if (!token) throw new Error('No autenticado');
+
+      if (isMockMode()) {
+        try {
+          return await mockBackendService.acceptConsent(token, caseId, req);
+        } catch (err: any) {
+          if (err instanceof MockHttpError) {
+            if (err.status === 401) notifyUnauthorized();
+            if (err.status === 403) notifyForbidden(err.message);
+          }
+          throw err;
+        }
+      }
+
+      return request<ConsentRecord>(`/cases/${caseId}/consent`, {
+        method: 'POST',
+        body: JSON.stringify(req),
+      });
     },
 
     async listMyCases(): Promise<CaseSummary[]> {
