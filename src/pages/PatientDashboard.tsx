@@ -178,7 +178,7 @@ export const PatientDashboard: React.FC = () => {
         await uploadFileToTemporaryUrl(intent.uploadUrl, uploadFile, setUploadProgress);
       }
       const confirmed = await apiClient.files.completeUpload(intent.file.id);
-      setCompletedFile(confirmed);
+      setCompletedFile('file' in confirmed ? confirmed.file : confirmed);
       setUploadFile(null);
       setWizardStep(5);
       await fetchCases();

@@ -459,7 +459,13 @@ export const mockBackendService = {
 
     const db = loadDb();
     return db.cases
-      .filter((c) => c.assignedUserIds.includes(parsed.sub))
+      .filter(
+        (c) =>
+          c.assignedUserIds.includes(parsed.sub) &&
+          c.status === 'ENABLED_FOR_PROCESSING' &&
+          !c.result &&
+          c.files.some((file) => file.fileKind === 'INPUT')
+      )
       .map((c) => ({
         id: c.id,
         referenceCode: c.referenceCode,

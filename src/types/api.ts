@@ -67,7 +67,7 @@ export interface InternalCaseSummary extends CaseSummary {
 export interface CreateUploadIntentRequest {
   originalFilename: string;
   contentType: string;
-  sizeBytes?: number;
+  sizeBytes: number;
 }
 
 export interface UploadIntent {
@@ -79,6 +79,18 @@ export interface UploadIntent {
 export interface DownloadIntent {
   downloadUrl: string;
   expiresAt: string;
+}
+
+export interface CompleteUploadResponse {
+  file: FileSummary;
+  result?: {
+    id: string;
+    caseId: string;
+    status: 'UPLOADED' | 'AVAILABLE';
+    uploadedBy: string;
+    uploadedAt: string;
+  };
+  caseStatus?: CaseStatus;
 }
 
 export interface PatientResult {

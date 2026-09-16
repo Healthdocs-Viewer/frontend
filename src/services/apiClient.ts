@@ -1,6 +1,7 @@
 import {
   AcceptConsentRequest,
   CaseSummary,
+  CompleteUploadResponse,
   ConsentRecord,
   CreateCaseRequest,
   CreateUploadIntentRequest,
@@ -306,7 +307,7 @@ export const apiClient = {
   },
 
   files: {
-    async completeUpload(fileId: string): Promise<FileSummary> {
+    async completeUpload(fileId: string): Promise<CompleteUploadResponse | FileSummary> {
       const token = getStoredToken();
       if (!token) throw new Error('No autenticado');
 
@@ -322,7 +323,7 @@ export const apiClient = {
         }
       }
 
-      return request<FileSummary>(`/files/${fileId}/complete`, {
+      return request<CompleteUploadResponse | FileSummary>(`/files/${fileId}/complete`, {
         method: 'POST',
       });
     },
