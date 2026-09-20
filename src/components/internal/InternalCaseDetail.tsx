@@ -11,11 +11,13 @@ import {
   AlertCircle,
   Hash,
   FileCheck,
+  Trash2,
 } from 'lucide-react';
 
 interface InternalCaseDetailProps {
   selectedCase: InternalCaseSummary | null;
   children?: React.ReactNode;
+  onResultDeleted?: () => void;
 }
 
 function formatBytes(bytes?: number): string {
@@ -29,6 +31,7 @@ function formatBytes(bytes?: number): string {
 export const InternalCaseDetail: React.FC<InternalCaseDetailProps> = ({
   selectedCase,
   children,
+  onResultDeleted,
 }) => {
   const [downloadingFileId, setDownloadingFileId] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
@@ -74,6 +77,26 @@ export const InternalCaseDetail: React.FC<InternalCaseDetailProps> = ({
     } finally {
       setDownloadingFileId(null);
     }
+  };
+
+  const handleDownloadResult = async () => {
+    if (!selectedCase.result || downloadingFileId) return;
+    setDownloadingFileId(selectedCase.result.id);
+    try {
+      const intent = await apiClient.internal.createResultDownload(selectedCase.id, selectedCase.result.id);
+      window.open(intent.downloadUrl, '_blank', 'noopener,noreferrer');
+      setDownloadSuccessMsg(`Enlace de descarga generado para "${selectedCase.result.originalFilename}".`);
+    } catch (err: any) { setDownloadError(err?.message || 'No fue posible descargar el resultado.'); }
+    finally { setDownloadingFileId(null); }
+  };
+
+  const handleDeleteResult = async () => {
+    if (!selectedCase.result || !window.confirm('¿Eliminar este resultado? Esta acción no se puede deshacer.')) return;
+    try {
+      await apiClient.internal.deleteResult(selectedCase.id, selectedCase.result.id);
+      setDownloadSuccessMsg('Resultado eliminado correctamente.');
+      onResultDeleted?.();
+    } catch (err: any) { setDownloadError(err?.message || 'No fue posible eliminar el resultado.'); }
   };
 
   return (
@@ -246,9 +269,10 @@ export const InternalCaseDetail: React.FC<InternalCaseDetailProps> = ({
                       {resFile.contentType || 'Resultado'} • {formatBytes(resFile.sizeBytes)}
                     </p>
                   </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    Cargado
-                  </span>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={handleDownloadResult} className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 px-2 py-1 rounded bg-sky-50" title="Descargar resultado"><Download className="w-3 h-3" />Descargar</button>
+                    {selectedCase.result?.status === 'UPLOADED' && <button type="button" onClick={handleDeleteResult} className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 px-2 py-1 rounded bg-red-50" title="Eliminar resultado"><Trash2 className="w-3 h-3" />Eliminar</button>}
+                  </div>
                 </div>
               ))}
             </div>

@@ -15,13 +15,17 @@ import {
 } from 'lucide-react';
 
 /** UUID del estudiante de prueba para pre-poblar el campo de asignación en desarrollo. */
-const DEV_STUDENT_UUID = 'b0000002-0000-0000-0000-000000000002';
+const DEV_STUDENT_UUID = '00000000-0000-0000-0000-000000000002';
 
 export const ProfessorDashboard: React.FC = () => {
   const [cases, setCases] = useState<InternalCaseSummary[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [isLoadingCases, setIsLoadingCases] = useState<boolean>(true);
   const [caseLoadError, setCaseLoadError] = useState<string | null>(null);
+  const [pendingCases, setPendingCases] = useState<InternalCaseSummary[]>([]);
+  const [selectedPendingCaseId, setSelectedPendingCaseId] = useState<string | null>(null);
+  const [isLoadingPendingCases, setIsLoadingPendingCases] = useState<boolean>(true);
+  const [pendingCaseLoadError, setPendingCaseLoadError] = useState<string | null>(null);
 
   // Estados de Asignación de Estudiantes (POST /operations/cases/{caseId}/assignments)
   const [studentUserId, setStudentUserId] = useState<string>(DEV_STUDENT_UUID);
@@ -29,8 +33,6 @@ export const ProfessorDashboard: React.FC = () => {
   const [assignSuccessMsg, setAssignSuccessMsg] = useState<string | null>(null);
   const [assignErrorMsg, setAssignErrorMsg] = useState<string | null>(null);
 
-  // Estados de Publicación de Resultados (POST /operations/results/{resultId}/availability)
-  const [resultIdInput, setResultIdInput] = useState<string>('');
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
   const [publishSuccessMsg, setPublishSuccessMsg] = useState<string | null>(null);
   const [publishErrorMsg, setPublishErrorMsg] = useState<string | null>(null);
@@ -54,25 +56,50 @@ export const ProfessorDashboard: React.FC = () => {
     }
   }, []);
 
+  const fetchPendingCases = useCallback(async () => {
+    setIsLoadingPendingCases(true);
+    setPendingCaseLoadError(null);
+    try {
+      const data = await apiClient.operations.listPendingCases();
+      setPendingCases(data);
+      if (data.length > 0) {
+        setSelectedPendingCaseId((prev) =>
+          prev && data.some((c) => c.id === prev) ? prev : data[0].id
+        );
+      } else {
+        setSelectedPendingCaseId(null);
+      }
+    } catch (err: any) {
+      console.error('Error al obtener casos pendientes:', err);
+      setPendingCaseLoadError(err?.message || 'No fue posible cargar los casos pendientes.');
+    } finally {
+      setIsLoadingPendingCases(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchCases();
-  }, [fetchCases]);
+    fetchPendingCases();
+  }, [fetchCases, fetchPendingCases]);
 
-  const selectedCase = cases.find((c) => c.id === selectedCaseId) || null;
+  const selectedPendingCase =
+    pendingCases.find((c) => c.id === selectedPendingCaseId) || null;
+  const selectedAssignedCase = cases.find((c) => c.id === selectedCaseId) || null;
+  const selectedCase = selectedPendingCase || selectedAssignedCase;
 
   // 1. Acción de Profesor: Asignar Estudiantes (POST /operations/cases/{caseId}/assignments)
   const handleAssignStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCaseId || !studentUserId || isAssigning) return;
+    if (!selectedCase || !studentUserId || isAssigning) return;
 
     setIsAssigning(true);
     setAssignSuccessMsg(null);
     setAssignErrorMsg(null);
 
     try {
-      await apiClient.operations.assignCase(selectedCaseId, studentUserId);
+      await apiClient.operations.assignCase(selectedCase.id, studentUserId);
       setAssignSuccessMsg(`Estudiante habilitado con éxito para el caso (${studentUserId}).`);
-      fetchCases();
+      await Promise.all([fetchPendingCases(), fetchCases()]);
     } catch (err: any) {
       console.error('Error al asignar caso:', err);
       setAssignErrorMsg(err?.message || 'Error al asignar el caso al estudiante.');
@@ -82,19 +109,16 @@ export const ProfessorDashboard: React.FC = () => {
   };
 
   // 2. Acción de Profesor: Publicar Resultados (POST /operations/results/{resultId}/availability)
-  const handlePublishResult = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const targetResultId = resultIdInput.trim();
-    if (!targetResultId || isPublishing) return;
+  const handlePublishResult = async (resultId: string) => {
+    if (!resultId || isPublishing) return;
 
     setIsPublishing(true);
     setPublishSuccessMsg(null);
     setPublishErrorMsg(null);
 
     try {
-      await apiClient.operations.makeResultAvailable(targetResultId);
-      setPublishSuccessMsg(`Resultado ${targetResultId} marcado como disponible para consulta del paciente.`);
-      setResultIdInput('');
+      await apiClient.operations.makeResultAvailable(resultId);
+      setPublishSuccessMsg('Resultado publicado y disponible para el paciente.');
       fetchCases();
     } catch (err: any) {
       console.error('Error al publicar resultado:', err);
@@ -134,8 +158,11 @@ export const ProfessorDashboard: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={fetchCases}
-          disabled={isLoadingCases}
+          onClick={() => {
+            fetchCases();
+            fetchPendingCases();
+          }}
+          disabled={isLoadingCases || isLoadingPendingCases}
           className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3.5 py-2.5 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isLoadingCases ? 'animate-spin' : ''}`} />
@@ -144,12 +171,31 @@ export const ProfessorDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Columna Izquierda: Listado de Casos */}
-        <div>
+        {/* Columna Izquierda: Casos pendientes y casos en supervisión */}
+        <div className="space-y-6">
+          <InternalCaseList
+            cases={pendingCases}
+            selectedCaseId={selectedPendingCaseId}
+            onSelectCase={(id) => {
+              setSelectedPendingCaseId(id);
+              setSelectedCaseId(null);
+              setAssignSuccessMsg(null);
+              setAssignErrorMsg(null);
+            }}
+            isLoading={isLoadingPendingCases}
+            errorMessage={pendingCaseLoadError}
+            onRetry={fetchPendingCases}
+            title="Casos Pendientes de Habilitación"
+            badgeLabel="FILES_RECEIVED"
+            loadingLabel="Cargando casos pendientes..."
+            emptyTitle="No hay casos pendientes"
+            emptyDescription="No hay casos FILES_RECEIVED esperando habilitación."
+          />
           <InternalCaseList
             cases={cases}
             selectedCaseId={selectedCaseId}
             onSelectCase={(id) => {
+              setSelectedPendingCaseId(null);
               setSelectedCaseId(id);
               setAssignSuccessMsg(null);
               setAssignErrorMsg(null);
@@ -166,7 +212,7 @@ export const ProfessorDashboard: React.FC = () => {
 
         {/* Columna Derecha: Detalle, Operaciones Docentes y Carga de Resultado */}
         <div className="lg:col-span-2 space-y-6">
-          <InternalCaseDetail selectedCase={selectedCase}>
+          <InternalCaseDetail selectedCase={selectedCase} onResultDeleted={fetchCases}>
             {selectedCase && (
               <div className="space-y-6 mt-6 pt-6 border-t border-slate-200">
                 {/* Operación 1: Asignar Estudiante al Caso */}
@@ -215,7 +261,7 @@ export const ProfessorDashboard: React.FC = () => {
                         data-testid="student-userid-input"
                         value={studentUserId}
                         onChange={(e) => setStudentUserId(e.target.value)}
-                        placeholder="b0000002-0000-0000-0000-000000000002"
+                        placeholder="00000000-0000-0000-0000-000000000002"
                         className="block w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
                     </div>
@@ -267,50 +313,38 @@ export const ProfessorDashboard: React.FC = () => {
                     </div>
                   )}
 
-                  <form onSubmit={handlePublishResult} className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                        ID de Resultado (resultId UUID)
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          required
-                          data-testid="result-id-input"
-                          value={resultIdInput}
-                          onChange={(e) => setResultIdInput(e.target.value)}
-                          placeholder="r1000000-0000-0000-0000-000000000001"
-                          className="block flex-1 px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                        />
+                  {selectedCase.result ? (
+                    <div className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 p-3">
+                      <div className="min-w-0 text-xs">
+                        <p className="font-semibold text-slate-800 truncate">{selectedCase.result.originalFilename}</p>
+                        <p className="text-slate-500 mt-1">
+                          Subido {selectedCase.result.uploadedAt ? new Date(selectedCase.result.uploadedAt).toLocaleString() : '—'}
+                          {selectedCase.result.uploadedBy ? ` · Por: ${selectedCase.result.uploadedBy}` : ''}
+                        </p>
+                        <p className="text-slate-500">Estado: {selectedCase.result.status}</p>
+                      </div>
+                      {selectedCase.result.status === 'UPLOADED' ? (
                         <button
                           type="button"
-                          onClick={() => setResultIdInput('r1000000-0000-0000-0000-000000000001')}
-                          className="px-2.5 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium border border-slate-200 cursor-pointer"
-                          title="Usar UUID del resultado de prueba 1"
+                          data-testid="submit-publish-button"
+                          onClick={() => handlePublishResult(selectedCase.result!.id)}
+                          disabled={isPublishing}
+                          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg disabled:opacity-50"
                         >
-                          Prueba 1
+                          <Share2 className="w-3.5 h-3.5" />
+                          {isPublishing ? 'Publicando...' : 'Publicar'}
                         </button>
-                      </div>
+                      ) : <span className="text-xs font-semibold text-emerald-700">Publicado</span>}
                     </div>
-
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        data-testid="submit-publish-button"
-                        disabled={isPublishing || !resultIdInput}
-                        className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        <Share2 className="w-3.5 h-3.5" />
-                        <span>{isPublishing ? 'Publicando...' : 'Publicar y Notificar al Paciente'}</span>
-                      </button>
-                    </div>
-                  </form>
+                  ) : <p className="text-xs text-slate-500">Aún no hay resultados cargados para este caso.</p>}
                 </div>
 
                 {/* Carga de Resultado por parte del Profesor */}
                 <ResultUploadCard
                   caseId={selectedCase.id}
                   caseStatus={selectedCase.status}
+                  result={selectedCase.result}
+                  disabled={selectedCase.status !== 'ENABLED_FOR_PROCESSING'}
                   onUploadSuccess={handleUploadSuccess}
                 />
               </div>

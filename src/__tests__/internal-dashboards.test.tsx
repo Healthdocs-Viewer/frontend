@@ -50,6 +50,23 @@ const mockAssignedCases: InternalCaseSummary[] = [
   },
 ];
 
+const mockPendingCase: InternalCaseSummary = {
+  id: 'c3000000-0000-0000-0000-000000000003',
+  referenceCode: 'CAS-20260916-0001',
+  status: 'FILES_RECEIVED',
+  studyType: 'TOMOGRAFIA_ABDOMINAL',
+  createdAt: '2026-09-16T09:45:00Z',
+  files: [
+    {
+      id: 'f4000000-0000-0000-0000-000000000004',
+      originalFilename: 'tomografia_abdominal.dcm',
+      contentType: 'application/dicom',
+      sizeBytes: 2048,
+      fileKind: 'INPUT',
+    },
+  ],
+};
+
 describe('Etapa 3: Integración de Dashboards del Flujo Interno', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -98,6 +115,56 @@ describe('Etapa 3: Integración de Dashboards del Flujo Interno', () => {
   });
 
   describe('ProfessorDashboard', () => {
+    it('muestra los casos pendientes en una lista separada y permite seleccionarlos', async () => {
+      vi.spyOn(apiClient.internal, 'listAssignedCases').mockResolvedValue(mockAssignedCases);
+      vi.spyOn(apiClient.operations, 'listPendingCases').mockResolvedValue([mockPendingCase]);
+
+      render(<ProfessorDashboard />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Casos Pendientes de Habilitación')).toBeInTheDocument();
+        expect(screen.getAllByText(mockPendingCase.referenceCode).length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByText(`ID: ${mockPendingCase.id}`)).toBeInTheDocument();
+        expect(screen.getByText(`INPUT: ${mockPendingCase.files[0].originalFilename}`)).toBeInTheDocument();
+        expect(screen.getByTestId('professor-assign-card')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Casos en Supervisión')).toBeInTheDocument();
+      expect(screen.getByTestId(`case-item-${mockPendingCase.id}`)).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      );
+    });
+
+    it('recarga pendientes y supervisión después de asignar un caso pendiente', async () => {
+      const assignedCasesSpy = vi
+        .spyOn(apiClient.internal, 'listAssignedCases')
+        .mockResolvedValue(mockAssignedCases);
+      const pendingCasesSpy = vi
+        .spyOn(apiClient.operations, 'listPendingCases')
+        .mockResolvedValue([mockPendingCase]);
+      const assignSpy = vi
+        .spyOn(apiClient.operations, 'assignCase')
+        .mockResolvedValueOnce(undefined);
+
+      render(<ProfessorDashboard />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('professor-assign-card')).toBeInTheDocument();
+      });
+      await userEvent.click(screen.getByTestId('submit-assign-button'));
+
+      await waitFor(() => {
+        expect(assignSpy).toHaveBeenCalledWith(
+          mockPendingCase.id,
+          '00000000-0000-0000-0000-000000000002'
+        );
+        expect(pendingCasesSpy).toHaveBeenCalledTimes(2);
+        expect(assignedCasesSpy).toHaveBeenCalledTimes(2);
+        expect(screen.getByTestId('assign-success-alert')).toBeInTheDocument();
+      });
+    });
+
     it('carga casos y permite ejecutar la asignación de un caso a un estudiante', async () => {
       vi.spyOn(apiClient.internal, 'listAssignedCases').mockResolvedValue(
         mockAssignedCases
@@ -119,7 +186,7 @@ describe('Etapa 3: Integración de Dashboards del Flujo Interno', () => {
       await waitFor(() => {
         expect(assignSpy).toHaveBeenCalledWith(
           mockAssignedCases[0].id,
-          'b0000002-0000-0000-0000-000000000002'
+          '00000000-0000-0000-0000-000000000002'
         );
         expect(screen.getByTestId('assign-success-alert')).toBeInTheDocument();
       });
@@ -140,14 +207,14 @@ describe('Etapa 3: Integración de Dashboards del Flujo Interno', () => {
       });
 
       const resultInput = screen.getByTestId('result-id-input');
-      await userEvent.type(resultInput, 'r1000000-0000-0000-0000-000000000001');
+      await userEvent.type(resultInput, '10000000-0000-0000-0000-000000000001');
 
       const publishButton = screen.getByTestId('submit-publish-button');
       await userEvent.click(publishButton);
 
       await waitFor(() => {
         expect(publishSpy).toHaveBeenCalledWith(
-          'r1000000-0000-0000-0000-000000000001'
+          '10000000-0000-0000-0000-000000000001'
         );
         expect(screen.getByTestId('publish-success-alert')).toBeInTheDocument();
       });

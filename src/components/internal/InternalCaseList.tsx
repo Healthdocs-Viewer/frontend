@@ -12,6 +12,9 @@ interface InternalCaseListProps {
   onRetry?: () => void;
   title?: string;
   badgeLabel?: string;
+  loadingLabel?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 export const InternalCaseList: React.FC<InternalCaseListProps> = ({
@@ -23,9 +26,12 @@ export const InternalCaseList: React.FC<InternalCaseListProps> = ({
   onRetry,
   title = 'Casos Habilitados',
   badgeLabel,
+  loadingLabel = 'Cargando casos habilitados...',
+  emptyTitle = 'No hay casos habilitados',
+  emptyDescription = 'Actualmente no tienes casos clínicos asignados para procesamiento.',
 }) => {
   return (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col h-full">
+    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col h-fit">
       {/* Encabezado de la lista */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
@@ -67,7 +73,7 @@ export const InternalCaseList: React.FC<InternalCaseListProps> = ({
             </div>
           ))}
           <p className="text-center text-xs text-slate-400 font-medium pt-2">
-            Cargando casos habilitados...
+            {loadingLabel}
           </p>
         </div>
       ) : errorMessage ? (
@@ -98,9 +104,9 @@ export const InternalCaseList: React.FC<InternalCaseListProps> = ({
           className="py-12 px-4 text-center rounded-lg border border-dashed border-slate-200 space-y-2 my-auto"
         >
           <FolderLock className="w-8 h-8 text-slate-300 mx-auto" />
-          <p className="text-xs font-semibold text-slate-700">No hay casos habilitados</p>
+          <p className="text-xs font-semibold text-slate-700">{emptyTitle}</p>
           <p className="text-[11px] text-slate-400 max-w-[240px] mx-auto">
-            Actualmente no tienes casos clínicos asignados para procesamiento.
+            {emptyDescription}
           </p>
         </div>
       ) : (
@@ -144,6 +150,10 @@ export const InternalCaseList: React.FC<InternalCaseListProps> = ({
                   {c.studyType ? c.studyType.replace(/_/g, ' ') : 'Estudio clínico'}
                 </div>
 
+                <div className="mt-1 text-[10px] font-mono text-slate-400 truncate" title={c.id}>
+                  ID: {c.id}
+                </div>
+
                 <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100 text-[11px] text-slate-400">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3 text-slate-400" />
@@ -154,6 +164,18 @@ export const InternalCaseList: React.FC<InternalCaseListProps> = ({
                     {inputFilesCount} insumo(s)
                   </span>
                 </div>
+                {inputFilesCount > 0 && (
+                  <div className="mt-1.5 text-[10px] text-slate-400 truncate" title={c.files
+                    .filter((file) => file.fileKind === 'INPUT')
+                    .map((file) => file.originalFilename)
+                    .join(', ')}
+                  >
+                    INPUT: {c.files
+                      .filter((file) => file.fileKind === 'INPUT')
+                      .map((file) => file.originalFilename)
+                      .join(', ')}
+                  </div>
+                )}
               </div>
             );
           })}

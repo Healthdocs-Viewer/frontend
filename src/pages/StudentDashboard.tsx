@@ -96,11 +96,12 @@ export const StudentDashboard: React.FC = () => {
 
         {/* Columna Derecha: Detalle del Caso y Carga de Resultado */}
         <div className="lg:col-span-2">
-          <InternalCaseDetail selectedCase={selectedCase}>
+          <InternalCaseDetail selectedCase={selectedCase} onResultDeleted={fetchAssignedCases}>
             {selectedCase && (
               <ResultUploadCard
                 caseId={selectedCase.id}
                 caseStatus={selectedCase.status}
+                result={selectedCase.result}
                 onUploadSuccess={handleUploadSuccess}
               />
             )}
