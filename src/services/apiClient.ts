@@ -14,21 +14,23 @@ import {
   PatientResult,
   UploadIntent,
   UserProfile,
-} from '../types/api';
-import { mockBackendService, MockHttpError } from './mockApi';
+} from "../types/api";
+import { mockBackendService, MockHttpError } from "./mockApi";
 
-const TOKEN_KEY = 'healthdocs_jwt_token';
-const MOCK_MODE_KEY = 'healthdocs_use_mock_api';
+const TOKEN_KEY = "healthdocs_jwt_token";
+const MOCK_MODE_KEY = "healthdocs_use_mock_api";
 
 // Configurable: Usar mock por defecto en desarrollo local si el backend no está disponible
 export function isMockMode(): boolean {
   const saved = localStorage.getItem(MOCK_MODE_KEY);
-  return saved === null ? true : saved === 'true';
+  return saved === null ? true : saved === "true";
 }
 
 export function setMockMode(enabled: boolean): void {
   localStorage.setItem(MOCK_MODE_KEY, String(enabled));
-  window.dispatchEvent(new CustomEvent('healthdocs_mock_mode_changed', { detail: enabled }));
+  window.dispatchEvent(
+    new CustomEvent("healthdocs_mock_mode_changed", { detail: enabled }),
+  );
 }
 
 export function getStoredToken(): string | null {
@@ -49,7 +51,7 @@ export function clearStoredToken(): void {
  * Así se evita la doble limpieza y se mantiene una sola fuente de verdad.
  */
 export function notifyUnauthorized(): void {
-  window.dispatchEvent(new CustomEvent('healthdocs_unauthorized'));
+  window.dispatchEvent(new CustomEvent("healthdocs_unauthorized"));
 }
 
 /**
@@ -57,12 +59,14 @@ export function notifyUnauthorized(): void {
  * No implica cierre de sesión.
  */
 export function notifyForbidden(
-  message: string = 'Permisos insuficientes para realizar esta acción.'
+  message: string = "Permisos insuficientes para realizar esta acción.",
 ): void {
-  window.dispatchEvent(new CustomEvent('healthdocs_forbidden', { detail: { message } }));
+  window.dispatchEvent(
+    new CustomEvent("healthdocs_forbidden", { detail: { message } }),
+  );
 }
 
-const API_BASE_URL = '/api/v1';
+const API_BASE_URL = "/api/v1";
 
 /**
  * Función base de fetch que:
@@ -76,14 +80,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getStoredToken();
   const headers = new Headers(options.headers || {});
 
-  headers.set('Accept', 'application/json');
+  headers.set("Accept", "application/json");
   if (options.body && !(options.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json');
+    headers.set("Content-Type", "application/json");
   }
 
   // Enviar JWT como Bearer token en cada llamada API
   if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   // Los errores de red (TypeError: Failed to fetch, etc.) se propagan directamente
@@ -93,11 +97,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers,
   });
 
+
   if (res.status === 401) {
     let errData: ErrorResponse = {
-      code: 'UNAUTHORIZED',
-      message: 'Sesión expirada o credenciales inválidas',
-      traceId: 'trace-401',
+      code: "UNAUTHORIZED",
+      message: "Sesión expirada o credenciales inválidas",
+      traceId: "trace-401",
     };
     try {
       errData = await res.json();
@@ -110,9 +115,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (res.status === 403) {
     let errData: ErrorResponse = {
-      code: 'FORBIDDEN',
-      message: 'Permisos insuficientes para este recurso',
-      traceId: 'trace-403',
+      code: "FORBIDDEN",
+      message: "Permisos insuficientes para este recurso",
+      traceId: "trace-403",
     };
     try {
       errData = await res.json();
@@ -134,8 +139,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     } catch {
       errData = {
         code: `HTTP_${res.status}`,
-        message: res.statusText || 'Error en la petición',
-        traceId: 'trace-err',
+        message: res.statusText || "Error en la petición",
+        traceId: "trace-err",
       };
     }
     throw errData;
@@ -160,8 +165,8 @@ export const apiClient = {
           throw err;
         }
       }
-      return request<LoginResponse>('/auth/login', {
-        method: 'POST',
+      return request<LoginResponse>("/auth/login", {
+        method: "POST",
         body: JSON.stringify(req),
       });
     },
@@ -178,9 +183,9 @@ export const apiClient = {
       if (!token) {
         // No hay token: caso normal, no hay sesión. No emitir evento.
         const err: ErrorResponse = {
-          code: 'NO_TOKEN',
-          message: 'Sin token de sesión',
-          traceId: 'trace-no-token',
+          code: "NO_TOKEN",
+          message: "Sin token de sesión",
+          traceId: "trace-no-token",
         };
         throw err;
       }
@@ -190,14 +195,14 @@ export const apiClient = {
         return await mockBackendService.getMe(token);
       }
 
-      return request<UserProfile>('/me');
+      return request<UserProfile>("/me");
     },
   },
 
   patient: {
     async createCase(req: CreateCaseRequest): Promise<CaseSummary> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
@@ -211,18 +216,18 @@ export const apiClient = {
         }
       }
 
-      return request<CaseSummary>('/cases', {
-        method: 'POST',
+      return request<CaseSummary>("/cases", {
+        method: "POST",
         body: JSON.stringify(req),
       });
     },
 
     async acceptConsent(
       caseId: string,
-      req: AcceptConsentRequest
+      req: AcceptConsentRequest,
     ): Promise<ConsentRecord> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
@@ -237,14 +242,14 @@ export const apiClient = {
       }
 
       return request<ConsentRecord>(`/cases/${caseId}/consent`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(req),
       });
     },
 
     async listMyCases(): Promise<CaseSummary[]> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
@@ -258,15 +263,15 @@ export const apiClient = {
         }
       }
 
-      return request<CaseSummary[]>('/cases');
+      return request<CaseSummary[]>("/cases");
     },
 
     async createInputUpload(
       caseId: string,
-      req: CreateUploadIntentRequest
+      req: CreateUploadIntentRequest,
     ): Promise<UploadIntent> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
@@ -281,15 +286,15 @@ export const apiClient = {
       }
 
       return request<UploadIntent>(`/cases/${caseId}/uploads`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(req),
       });
     },
 
     async getPatientResult(caseId: string): Promise<PatientResult> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
 
+      if (!token) throw new Error("No autenticado");
       if (isMockMode()) {
         try {
           return await mockBackendService.getPatientResult(token, caseId);
@@ -301,15 +306,16 @@ export const apiClient = {
           throw err;
         }
       }
-
       return request<PatientResult>(`/cases/${caseId}/result`);
     },
   },
 
   files: {
-    async completeUpload(fileId: string): Promise<CompleteUploadResponse | FileSummary> {
+    async completeUpload(
+      fileId: string,
+    ): Promise<CompleteUploadResponse> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
@@ -323,16 +329,19 @@ export const apiClient = {
         }
       }
 
-      return request<CompleteUploadResponse | FileSummary>(`/files/${fileId}/complete`, {
-        method: 'POST',
-      });
+      return request<CompleteUploadResponse>(
+        `/files/${fileId}/complete`,
+        {
+          method: "POST",
+        },
+      );
     },
   },
 
   internal: {
     async listAssignedCases(): Promise<InternalCaseSummary[]> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
@@ -346,16 +355,23 @@ export const apiClient = {
         }
       }
 
-      return request<InternalCaseSummary[]>('/internal/cases');
+      return request<InternalCaseSummary[]>("/internal/cases");
     },
 
-    async createInputDownload(caseId: string, fileId: string): Promise<DownloadIntent> {
+    async createInputDownload(
+      caseId: string,
+      fileId: string,
+    ): Promise<DownloadIntent> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
-          return await mockBackendService.createInputDownload(token, caseId, fileId);
+          return await mockBackendService.createInputDownload(
+            token,
+            caseId,
+            fileId,
+          );
         } catch (err: any) {
           if (err instanceof MockHttpError) {
             if (err.status === 401) notifyUnauthorized();
@@ -367,20 +383,42 @@ export const apiClient = {
 
       return request<DownloadIntent>(
         `/internal/cases/${caseId}/files/${fileId}/download`,
-        { method: 'POST' }
+        { method: "POST" },
       );
+    },
+
+    async createResultDownload(caseId: string, resultId: string): Promise<DownloadIntent> {
+      if (isMockMode()) {
+        const token = getStoredToken();
+        if (!token) throw new Error("No autenticado");
+        return mockBackendService.createResultDownload(token, caseId, resultId);
+      }
+      return request<DownloadIntent>(`/internal/cases/${caseId}/results/${resultId}/download`, { method: "POST" });
+    },
+
+    async deleteResult(caseId: string, resultId: string): Promise<void> {
+      if (isMockMode()) {
+        const token = getStoredToken();
+        if (!token) throw new Error("No autenticado");
+        return mockBackendService.deleteResult(token, caseId, resultId);
+      }
+      return request<void>(`/internal/cases/${caseId}/results/${resultId}`, { method: "DELETE" });
     },
 
     async createResultUpload(
       caseId: string,
-      req: CreateUploadIntentRequest
+      req: CreateUploadIntentRequest,
     ): Promise<UploadIntent> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
-          return await mockBackendService.createResultUpload(token, caseId, req);
+          return await mockBackendService.createResultUpload(
+            token,
+            caseId,
+            req,
+          );
         } catch (err: any) {
           if (err instanceof MockHttpError) {
             if (err.status === 401) notifyUnauthorized();
@@ -391,16 +429,35 @@ export const apiClient = {
       }
 
       return request<UploadIntent>(`/internal/cases/${caseId}/result-uploads`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(req),
       });
     },
   },
 
   operations: {
+    async listPendingCases(): Promise<InternalCaseSummary[]> {
+      const token = getStoredToken();
+      if (!token) throw new Error("No autenticado");
+
+      if (isMockMode()) {
+        try {
+          return await mockBackendService.listPendingCases(token);
+        } catch (err: any) {
+          if (err instanceof MockHttpError) {
+            if (err.status === 401) notifyUnauthorized();
+            if (err.status === 403) notifyForbidden(err.message);
+          }
+          throw err;
+        }
+      }
+
+      return request<InternalCaseSummary[]>("/operations/cases/pending");
+    },
+
     async assignCase(caseId: string, userId: string): Promise<void> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
@@ -415,14 +472,14 @@ export const apiClient = {
       }
 
       return request<void>(`/operations/cases/${caseId}/assignments`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ userId }),
       });
     },
 
     async makeResultAvailable(resultId: string): Promise<void> {
       const token = getStoredToken();
-      if (!token) throw new Error('No autenticado');
+      if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
@@ -437,7 +494,7 @@ export const apiClient = {
       }
 
       return request<void>(`/operations/results/${resultId}/availability`, {
-        method: 'POST',
+        method: "POST",
       });
     },
   },
