@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 import { PatientDashboard } from './pages/PatientDashboard';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { ProfessorDashboard } from './pages/ProfessorDashboard';
+import { PatientResultPage } from './pages/PatientResultPage';
 import { Navbar } from './components/Navbar';
 import { ForbiddenAlert } from './components/ForbiddenAlert';
 import { notifyUnauthorized, notifyForbidden } from './services/apiClient';
@@ -66,11 +67,17 @@ export const App: React.FC = () => {
       </div>
 
       <main className="flex-1">
+        {getPatientResultCaseId() && <PatientResultPage caseId={getPatientResultCaseId()!} />}
         {/* Renderizado de vista según rol */}
-        {user.role === 'paciente' && <PatientDashboard />}
+        {user.role === 'paciente' && !getPatientResultCaseId() && <PatientDashboard />}
         {user.role === 'estudiante' && <StudentDashboard />}
         {user.role === 'profesor' && <ProfessorDashboard />}
       </main>
     </div>
   );
 };
+
+function getPatientResultCaseId(): string | null {
+  const match = window.location.pathname.match(/^\/patient\/results\/([^/]+)\/?$/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
