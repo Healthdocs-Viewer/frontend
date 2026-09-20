@@ -171,6 +171,9 @@ export const PatientDashboard: React.FC = () => {
         contentType: uploadFile.type || 'application/octet-stream',
         sizeBytes: uploadFile.size,
       });
+      if (Date.now() >= Date.parse(intent.expiresAt)) {
+        throw new Error('La intención de carga expiró. Solicita una nueva carga.');
+      }
       const isLegacyMockUrl = intent.uploadUrl.startsWith('https://storage.healthdocs.local');
       if (isLegacyMockUrl) {
         setUploadProgress(100);
@@ -178,7 +181,7 @@ export const PatientDashboard: React.FC = () => {
         await uploadFileToTemporaryUrl(intent.uploadUrl, uploadFile, setUploadProgress);
       }
       const confirmed = await apiClient.files.completeUpload(intent.file.id);
-      setCompletedFile('file' in confirmed ? confirmed.file : confirmed);
+      setCompletedFile(confirmed.file);
       setUploadFile(null);
       setWizardStep(5);
       await fetchCases();
@@ -229,7 +232,7 @@ export const PatientDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <aside className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col h-full">
+        <aside className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col h-fit">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
               <FileText className="w-4 h-4 text-indigo-600" />
