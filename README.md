@@ -30,7 +30,7 @@ Aplicación web de desarrollo para Healthdocs Viewer basada en el contrato OpenA
     - Asignar casos a estudiantes (`POST /operations/cases/{caseId}/assignments`)
     - Publicar y marcar resultados como disponibles para el paciente (`POST /operations/results/{resultId}/availability`)
 - **Modos de Ejecución**:
-  - **Mock Dev**: Emulador en memoria conforme al 100% con OpenAPI para desarrollo y pruebas inmediatas sin requerir backend iniciado.
+    - **Mock Dev**: Emulador en memoria para desarrollo y pruebas inmediatas sin requerir backend iniciado. Cubre el flujo principal, pero no sustituye la validación end-to-end contra el backend real.
   - **Backend API**: Conexión directa mediante proxy hacia `http://localhost:8080/api/v1`.
 
 ## Comandos de desarrollo
@@ -48,3 +48,7 @@ npm run build
 # Vista previa de la compilación de producción
 npm run preview
 ```
+
+## Flujo local de resultados
+
+La guía reproducible del paso 8, incluidos casos de prueba, estados HTTP, expiración de URLs y limitaciones, está en [`../docs/paso-8-flujo-local.md`](../docs/paso-8-flujo-local.md). El mock se puede usar sin backend; para probar el contrato real, iniciar primero PostgreSQL y Spring Boot según `backend/README.md`.
