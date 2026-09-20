@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { CaseStatus, CompleteUploadResponse, FileSummary } from '../../types/api';
+import { CaseStatus, CompleteUploadResponse } from '../../types/api';
 import { apiClient } from '../../services/apiClient';
 import {
   UploadCloud,
@@ -9,13 +9,16 @@ import {
   X,
   Loader2,
   HelpCircle,
+  Download,
 } from 'lucide-react';
+import { ResultSummary } from '../../types/api';
 
 interface ResultUploadCardProps {
   caseId: string;
   caseStatus?: CaseStatus;
-  onUploadSuccess?: (response: CompleteUploadResponse | FileSummary) => void;
+  onUploadSuccess?: (response: CompleteUploadResponse) => void;
   disabled?: boolean;
+  result?: ResultSummary;
 }
 
 const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
@@ -58,6 +61,7 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
   caseStatus,
   onUploadSuccess,
   disabled = false,
+  result,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -130,6 +134,9 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
         contentType: mimeType,
         sizeBytes: selectedFile.size,
       });
+      if (Date.now() >= Date.parse(intent.expiresAt)) {
+        throw new Error('La intención de carga expiró. Solicita una nueva carga.');
+      }
 
       // Paso 2: Carga directa a S3 / URL prefirmada con PUT binario
       setUploadStep('Transfiriendo archivo al almacenamiento...');
@@ -177,6 +184,16 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
 
   const isAlreadyProcessed = caseStatus === 'RESULT_AVAILABLE';
 
+  const handleDownloadResult = async () => {
+    if (!result) return;
+    try {
+      const intent = await apiClient.internal.createResultDownload(caseId, result.id);
+      window.open(intent.downloadUrl, '_blank', 'noopener,noreferrer');
+    } catch (err: any) {
+      setUploadError(err?.message || 'No fue posible descargar el resultado.');
+    }
+  };
+
   return (
     <div
       data-testid="result-upload-card"
@@ -209,6 +226,33 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
           <span>
             Este caso ya tiene un resultado publicado y disponible para el paciente. Si cargas uno nuevo, reemplazarás la asociación previa.
           </span>
+        </div>
+      )}
+
+      {result && (
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-emerald-900 truncate" title={result.originalFilename}>
+              {result.originalFilename}
+            </p>
+            <p className="text-[11px] text-emerald-700">Resultado {result.status === 'AVAILABLE' ? 'publicado' : 'cargado'}</p>
+          </div>
+          <button
+            type="button"
+            data-testid="download-result-button"
+            onClick={handleDownloadResult}
+            className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex-shrink-0"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Descargar resultado
+          </button>
+        </div>
+      )}
+
+      {disabled && caseStatus !== 'RESULT_AVAILABLE' && (
+        <div className="p-3 rounded-lg text-xs bg-slate-50 text-slate-600 border border-slate-200">
+          Primero debes habilitar el caso para procesamiento. La carga de resultados estará disponible cuando el estado sea
+          <strong className="ml-1">ENABLED_FOR_PROCESSING</strong>.
         </div>
       )}
 

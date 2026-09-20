@@ -56,12 +56,22 @@ export interface FileSummary {
   id: string;
   originalFilename: string;
   contentType?: string;
-  sizeBytes?: number;
+  sizeBytes: number;
   fileKind: 'INPUT' | 'RESULT';
 }
 
 export interface InternalCaseSummary extends CaseSummary {
   files: FileSummary[];
+  result?: ResultSummary;
+}
+
+export interface ResultSummary {
+  id: string;
+  originalFilename: string;
+  status: 'UPLOADED' | 'AVAILABLE';
+  uploadedBy?: string;
+  uploadedAt?: string;
+  availableAt?: string;
 }
 
 export interface CreateUploadIntentRequest {
@@ -90,7 +100,7 @@ export interface CompleteUploadResponse {
     uploadedBy: string;
     uploadedAt: string;
   };
-  caseStatus?: CaseStatus;
+  caseStatus: CaseStatus;
 }
 
 export interface PatientResult {

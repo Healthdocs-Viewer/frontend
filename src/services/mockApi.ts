@@ -1,6 +1,7 @@
 import {
   AcceptConsentRequest,
   CaseSummary,
+  CompleteUploadResponse,
   ConsentRecord,
   CreateCaseRequest,
   CreateUploadIntentRequest,
@@ -15,38 +16,37 @@ import {
 
 /**
  * Credenciales de prueba alineadas con el backend.
- * El campo `email` del contrato OpenAPI transporta el identificador de usuario;
- * el backend de desarrollo acepta el nombre simple sin dominio.
+ * Estas credenciales deben coincidir con las cuentas sembradas por el backend local.
  *
  * IMPORTANTE: No importar este arreglo en componentes de UI — usar QUICK_LOGIN_CREDENTIALS.
  */
 export const TEST_USERS = [
   {
-    email: 'paciente',
+    email: 'paciente@healthdocs.local',
     password: 'paciente123',
     user: {
       id: 'b0000001-0000-0000-0000-000000000001',
-      email: 'paciente',
+      email: 'paciente@healthdocs.local',
       role: 'paciente' as const,
       enabled: true,
     },
   },
   {
-    email: 'estudiante',
+    email: 'estudiante@healthdocs.local',
     password: 'estudiante123',
     user: {
-      id: 'b0000002-0000-0000-0000-000000000002',
-      email: 'estudiante',
+      id: '00000000-0000-0000-0000-000000000002',
+      email: 'estudiante@healthdocs.local',
       role: 'estudiante' as const,
       enabled: true,
     },
   },
   {
-    email: 'profesor',
+    email: 'profesor@healthdocs.local',
     password: 'profesor123',
     user: {
       id: 'b0000003-0000-0000-0000-000000000003',
-      email: 'profesor',
+      email: 'profesor@healthdocs.local',
       role: 'profesor' as const,
       enabled: true,
     },
@@ -63,12 +63,14 @@ export const QUICK_LOGIN_CREDENTIALS: Array<{
   email: string;
   password: string;
 }> = [
-  { label: 'Paciente', role: 'paciente', email: 'paciente', password: 'paciente123' },
-  { label: 'Estudiante', role: 'estudiante', email: 'estudiante', password: 'estudiante123' },
-  { label: 'Profesor', role: 'profesor', email: 'profesor', password: 'profesor123' },
+  { label: 'Paciente', role: 'paciente', email: 'paciente@healthdocs.local', password: 'paciente123' },
+  { label: 'Estudiante', role: 'estudiante', email: 'estudiante@healthdocs.local', password: 'estudiante123' },
+  { label: 'Profesor', role: 'profesor', email: 'profesor@healthdocs.local', password: 'profesor123' },
 ];
 
 interface MockDatabase {
+  uploadInitiators: Record<string, string>;
+  uploadExpiresAt: Record<string, string>;
   cases: Array<{
     id: string;
     patientId: string;
@@ -81,6 +83,8 @@ interface MockDatabase {
     result?: {
       id: string;
       availableAt?: string;
+      uploadedBy?: string;
+      uploadedAt?: string;
       downloadUrl: string;
       isAvailable: boolean;
     };
@@ -95,9 +99,11 @@ function getInitialDatabase(): MockDatabase {
   const file1Id = 'f1000000-0000-0000-0000-000000000001';
   const file2Id = 'f2000000-0000-0000-0000-000000000002';
   const fileResultId = 'f3000000-0000-0000-0000-000000000003';
-  const result1Id = 'r1000000-0000-0000-0000-000000000001';
+  const result1Id = '10000000-0000-0000-0000-000000000001';
 
   return {
+    uploadInitiators: {},
+    uploadExpiresAt: {},
     cases: [
       {
         id: case1Id,
@@ -107,7 +113,7 @@ function getInitialDatabase(): MockDatabase {
         studyType: 'RADIOGRAFIA_TORAX',
         createdAt: '2026-09-10T14:30:00Z',
         assignedUserIds: [
-          'b0000002-0000-0000-0000-000000000002',
+          '00000000-0000-0000-0000-000000000002',
           'b0000003-0000-0000-0000-000000000003',
         ],
         files: [
@@ -129,7 +135,7 @@ function getInitialDatabase(): MockDatabase {
         result: {
           id: result1Id,
           availableAt: '2026-09-12T09:00:00Z',
-          downloadUrl: 'https://storage.healthdocs.local/results/r1000000.mp4',
+      downloadUrl: '',
           isAvailable: true,
         },
       },
@@ -141,7 +147,7 @@ function getInitialDatabase(): MockDatabase {
         studyType: 'RESONANCIA_CEREBRAL',
         createdAt: '2026-09-14T11:15:00Z',
         assignedUserIds: [
-          'b0000002-0000-0000-0000-000000000002',
+          '00000000-0000-0000-0000-000000000002',
           'b0000003-0000-0000-0000-000000000003',
         ],
         files: [
@@ -161,13 +167,30 @@ function getInitialDatabase(): MockDatabase {
 function loadDb(): MockDatabase {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const db = JSON.parse(raw) as Partial<MockDatabase>;
+      return {
+        cases: db.cases ?? [],
+        uploadInitiators: db.uploadInitiators ?? {},
+        uploadExpiresAt: db.uploadExpiresAt ?? {},
+      };
+    }
   } catch {
     // fallback
   }
   const initial = getInitialDatabase();
   saveDb(initial);
   return initial;
+}
+
+function createTemporaryResultDownload(caseId: string, resultId: string): DownloadIntent {
+  const expiresAtMs = Date.now() + 15 * 60 * 1000;
+  const expiresAt = new Date(expiresAtMs).toISOString();
+  // El token es opaco y la ruta solo contiene identificadores técnicos.
+  return {
+    downloadUrl: `https://storage.healthdocs.local/api/v1/dev/downloads/result/${caseId}/${resultId}?expires=${expiresAtMs}&token=${crypto.randomUUID()}`,
+    expiresAt,
+  };
 }
 
 function saveDb(db: MockDatabase): void {
@@ -370,6 +393,7 @@ export const mockBackendService = {
     }
 
     const fileId = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const file: FileSummary = {
       id: fileId,
       originalFilename: req.originalFilename,
@@ -379,26 +403,39 @@ export const mockBackendService = {
     };
 
     targetCase.files.push(file);
+    db.uploadInitiators[fileId] = parsed.sub;
+    db.uploadExpiresAt[fileId] = expiresAt;
     saveDb(db);
 
     return {
       file,
       uploadUrl: `https://storage.healthdocs.local/uploads/${fileId}?signature=mock`,
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      expiresAt,
     };
   },
 
-  async completeUpload(token: string, fileId: string): Promise<FileSummary> {
+  async completeUpload(token: string, fileId: string): Promise<CompleteUploadResponse> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
 
     const db = loadDb();
     let foundFile: FileSummary | null = null;
+    let foundCase: (typeof db.cases)[number] | null = null;
+
+    const initiator = db.uploadInitiators[fileId];
+    const expiresAt = db.uploadExpiresAt[fileId];
+    if (!initiator || initiator !== parsed.sub) {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo quien inició la intención puede confirmarla');
+    }
+    if (!expiresAt || Date.now() >= Date.parse(expiresAt)) {
+      throw new MockHttpError(409, 'CONFLICT', 'La intención de carga expiró');
+    }
 
     for (const c of db.cases) {
       const f = c.files.find((file) => file.id === fileId);
       if (f) {
         foundFile = f;
+        foundCase = c;
         if (f.fileKind === 'INPUT') {
           if (c.patientId !== parsed.sub) {
             throw new MockHttpError(403, 'FORBIDDEN', 'No es propietario del caso');
@@ -408,6 +445,14 @@ export const mockBackendService = {
           if (!c.assignedUserIds.includes(parsed.sub)) {
             throw new MockHttpError(403, 'FORBIDDEN', 'Usuario no habilitado para este caso');
           }
+          const resultId = crypto.randomUUID();
+          c.result = {
+            id: resultId,
+            uploadedBy: parsed.sub,
+            uploadedAt: new Date().toISOString(),
+            isAvailable: false,
+            downloadUrl: `https://storage.healthdocs.local/results/${resultId}.mp4`,
+          };
           c.status = 'RESULT_UPLOADED';
         }
         break;
@@ -419,7 +464,24 @@ export const mockBackendService = {
     }
 
     saveDb(db);
-    return foundFile;
+    delete db.uploadInitiators[fileId];
+    delete db.uploadExpiresAt[fileId];
+    saveDb(db);
+    return {
+      file: foundFile,
+      ...(foundFile.fileKind === 'RESULT' && foundCase?.result
+        ? {
+            result: {
+              id: foundCase.result.id,
+              caseId: foundCase.id,
+              status: 'UPLOADED' as const,
+              uploadedBy: parsed.sub,
+              uploadedAt: new Date().toISOString(),
+            },
+          }
+        : {}),
+      caseStatus: foundCase?.status ?? 'FILES_RECEIVED',
+    };
   },
 
   async getPatientResult(token: string, caseId: string): Promise<PatientResult> {
@@ -436,17 +498,14 @@ export const mockBackendService = {
     }
 
     if (!c.result || !c.result.isAvailable || !c.result.availableAt) {
-      throw new MockHttpError(404, 'NOT_FOUND', 'El resultado aún no está disponible');
+      throw new MockHttpError(409, 'CONFLICT', 'El resultado aún no está disponible');
     }
 
     return {
       id: c.result.id,
       caseId: c.id,
       availableAt: c.result.availableAt,
-      download: {
-        downloadUrl: c.result.downloadUrl,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-      },
+      download: createTemporaryResultDownload(c.id, c.result.id),
     };
   },
 
@@ -462,8 +521,7 @@ export const mockBackendService = {
       .filter(
         (c) =>
           c.assignedUserIds.includes(parsed.sub) &&
-          c.status === 'ENABLED_FOR_PROCESSING' &&
-          !c.result &&
+          ['ENABLED_FOR_PROCESSING', 'RESULT_UPLOADED', 'RESULT_AVAILABLE'].includes(c.status) &&
           c.files.some((file) => file.fileKind === 'INPUT')
       )
       .map((c) => ({
@@ -473,6 +531,16 @@ export const mockBackendService = {
         studyType: c.studyType,
         createdAt: c.createdAt,
         files: c.files,
+        result: c.result
+          ? {
+              id: c.result.id,
+              originalFilename: c.files.find((file) => file.fileKind === 'RESULT')?.originalFilename ?? 'resultado',
+              status: c.result.isAvailable ? 'AVAILABLE' as const : 'UPLOADED' as const,
+              uploadedBy: c.result.uploadedBy,
+              uploadedAt: c.result.uploadedAt,
+              availableAt: c.result.availableAt,
+            }
+          : undefined,
       }));
   },
 
@@ -489,7 +557,8 @@ export const mockBackendService = {
 
     const db = loadDb();
     const c = db.cases.find((item) => item.id === caseId);
-    if (!c || !c.assignedUserIds.includes(parsed.sub)) {
+    const canReviewPending = parsed.role === 'profesor' && c?.status === 'FILES_RECEIVED';
+    if (!c || (!c.assignedUserIds.includes(parsed.sub) && !canReviewPending)) {
       throw new MockHttpError(403, 'FORBIDDEN', 'Caso no habilitado para este usuario');
     }
 
@@ -502,6 +571,59 @@ export const mockBackendService = {
       downloadUrl: `https://storage.healthdocs.local/downloads/${fileId}?file=${encodeURIComponent(f.originalFilename)}`,
       expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     };
+  },
+
+  async createResultDownload(
+    token: string,
+    caseId: string,
+    resultId: string,
+  ): Promise<DownloadIntent> {
+    await new Promise((r) => setTimeout(r, 200));
+    const parsed = verifyMockToken(token);
+    if (parsed.role !== 'estudiante' && parsed.role !== 'profesor') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Permisos insuficientes');
+    }
+
+    const db = loadDb();
+    const c = db.cases.find((item) => item.id === caseId);
+    if (!c || !c.assignedUserIds.includes(parsed.sub)) {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Caso no habilitado para este usuario');
+    }
+    if (!c.result || c.result.id !== resultId) {
+      throw new MockHttpError(404, 'NOT_FOUND', 'Resultado no encontrado en el caso');
+    }
+
+    const resultFile = c.files.find((file) => file.fileKind === 'RESULT');
+    if (!resultFile) {
+      throw new MockHttpError(404, 'NOT_FOUND', 'Archivo del resultado no encontrado');
+    }
+
+    return createTemporaryResultDownload(c.id, c.result.id);
+  },
+
+  async deleteResult(token: string, caseId: string, resultId: string): Promise<void> {
+    await new Promise((r) => setTimeout(r, 200));
+    const parsed = verifyMockToken(token);
+    if (parsed.role !== 'estudiante' && parsed.role !== 'profesor') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Permisos insuficientes');
+    }
+
+    const db = loadDb();
+    const c = db.cases.find((item) => item.id === caseId);
+    if (!c || !c.assignedUserIds.includes(parsed.sub)) {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Caso no habilitado para este usuario');
+    }
+    if (!c.result || c.result.id !== resultId) {
+      throw new MockHttpError(404, 'NOT_FOUND', 'Resultado no encontrado en el caso');
+    }
+    if (c.result.isAvailable) {
+      throw new MockHttpError(409, 'CONFLICT', 'Published results cannot be deleted');
+    }
+
+    c.files = c.files.filter((file) => file.fileKind !== 'RESULT');
+    delete c.result;
+    c.status = 'ENABLED_FOR_PROCESSING';
+    saveDb(db);
   },
 
   async createResultUpload(
@@ -522,6 +644,7 @@ export const mockBackendService = {
     }
 
     const fileId = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const file: FileSummary = {
       id: fileId,
       originalFilename: req.originalFilename,
@@ -531,21 +654,40 @@ export const mockBackendService = {
     };
 
     c.files.push(file);
-
-    const resultId = crypto.randomUUID();
-    c.result = {
-      id: resultId,
-      isAvailable: false,
-      downloadUrl: `https://storage.healthdocs.local/results/${resultId}.mp4`,
-    };
+    db.uploadInitiators[fileId] = parsed.sub;
+    db.uploadExpiresAt[fileId] = expiresAt;
 
     saveDb(db);
 
     return {
       file,
       uploadUrl: `https://storage.healthdocs.local/results/upload/${fileId}`,
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      expiresAt,
     };
+  },
+
+  async listPendingCases(token: string): Promise<InternalCaseSummary[]> {
+    await new Promise((r) => setTimeout(r, 150));
+    const parsed = verifyMockToken(token);
+    if (parsed.role !== 'profesor') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol profesor puede consultar casos pendientes');
+    }
+
+    const db = loadDb();
+    return db.cases
+      .filter(
+        (c) =>
+          c.status === 'FILES_RECEIVED' &&
+          c.files.some((file) => file.fileKind === 'INPUT')
+      )
+      .map((c) => ({
+        id: c.id,
+        referenceCode: c.referenceCode,
+        status: c.status,
+        studyType: c.studyType,
+        createdAt: c.createdAt,
+        files: c.files,
+      }));
   },
 
   async assignCase(token: string, caseId: string, userId: string): Promise<void> {
