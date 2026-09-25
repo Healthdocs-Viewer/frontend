@@ -60,10 +60,129 @@ const recentCases = [
     "Acción requerida",
     "amber",
   ],
+  [
+    "CAS-20260901-0004",
+    "Ecografía abdominal",
+    "1/9/2026, 14:30",
+    "Creado",
+    "indigo",
+  ],
+  [
+    "CAS-20260828-0006",
+    "Tomografía de cráneo",
+    "28/8/2026, 10:05",
+    "En proceso",
+    "blue",
+  ],
+  [
+    "CAS-20260820-0007",
+    "Resonancia lumbar",
+    "20/8/2026, 08:40",
+    "Resultado disponible",
+    "emerald",
+  ],
+  [
+    "CAS-20260815-0008",
+    "Radiografía de hombro",
+    "15/8/2026, 16:20",
+    "Acción requerida",
+    "amber",
+  ],
+];
+
+const ITEMS_PER_PAGE = 5;
+const MIN_VISIBLE_ROWS = 3;
+
+const recentActivities = [
+  {
+    icon: CheckCircle2,
+    tone: "emerald" as const,
+    title: "Resultado publicado",
+    description: "El resultado del caso CAS-20260910-0005 ya está disponible.",
+    date: "20/9/2026, 20:17",
+  },
+  {
+    icon: FileText,
+    tone: "indigo" as const,
+    title: "Archivo cargado",
+    description: "Has cargado un archivo para el caso CAS-20260918-0001.",
+    date: "18/9/2026, 16:23",
+  },
+  {
+    icon: Check,
+    tone: "blue" as const,
+    title: "Consentimiento aceptado",
+    description: "Has aceptado el consentimiento del caso CAS-20260905-0003.",
+    date: "5/9/2026, 09:16",
+  },
+  {
+    icon: BellRing,
+    tone: "rose" as const,
+    title: "Notificación enviada",
+    description: "Te hemos enviado una notificación sobre el caso CAS-20260921-0002.",
+    date: "5/9/2026, 09:15",
+  },
+  {
+    icon: Upload,
+    tone: "indigo" as const,
+    title: "Documento recibido",
+    description: "El centro médico recibió el documento solicitado.",
+    date: "3/9/2026, 11:40",
+  },
+  {
+    icon: CheckCircle2,
+    tone: "emerald" as const,
+    title: "Estudio completado",
+    description: "El estudio del caso CAS-20260901-0004 fue completado.",
+    date: "1/9/2026, 15:12",
+  },
+  {
+    icon: FileText,
+    tone: "indigo" as const,
+    title: "Informe actualizado",
+    description: "Se actualizó el informe de tu resonancia lumbar.",
+    date: "28/8/2026, 13:05",
+  },
+  {
+    icon: BellRing,
+    tone: "rose" as const,
+    title: "Recordatorio enviado",
+    description: "Tienes una actividad pendiente en tu portal.",
+    date: "25/8/2026, 08:30",
+  },
+  {
+    icon: Check,
+    tone: "blue" as const,
+    title: "Datos confirmados",
+    description: "Tus datos personales fueron confirmados correctamente.",
+    date: "22/8/2026, 17:45",
+  },
+  {
+    icon: Upload,
+    tone: "indigo" as const,
+    title: "Nueva orden médica",
+    description: "Se agregó una nueva orden médica a tu caso.",
+    date: "20/8/2026, 10:20",
+  },
+  {
+    icon: CheckCircle2,
+    tone: "emerald" as const,
+    title: "Caso archivado",
+    description: "El caso CAS-20260815-0008 fue archivado.",
+    date: "15/8/2026, 14:10",
+  },
 ];
 
 export const DashboardPage: React.FC = () => {
   const [collapsed, setCollapsed] = React.useState(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+
+  const totalPages = Math.ceil(recentCases.length / ITEMS_PER_PAGE);
+  const paginatedCases = recentCases.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <aside
@@ -234,8 +353,8 @@ export const DashboardPage: React.FC = () => {
             />
           </section>
 
-          <section className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(340px,1fr)]">
-            <article className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <section className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(340px,1fr)]">
+            <article className="min-w-0 self-start overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div className="flex items-center gap-2">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -276,7 +395,7 @@ export const DashboardPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {recentCases.map(([id, study, date, status, tone]) => (
+                    {paginatedCases.map(([id, study, date, status, tone]) => (
                       <tr
                         key={id}
                         className="text-slate-600 transition-colors hover:bg-slate-50/70"
@@ -320,49 +439,115 @@ export const DashboardPage: React.FC = () => {
                         </td>
                       </tr>
                     ))}
+                    {Array.from({
+                      length: Math.max(
+                        0,
+                        MIN_VISIBLE_ROWS - paginatedCases.length,
+                      ),
+                    }).map((_, index) => (
+                      <tr key={`empty-row-${index}`} className="h-[73px]">
+                        <td colSpan={5} aria-hidden="true" />
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+                  <p className="text-xs text-slate-500">
+                    Página {currentPage} de {totalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((page) => page - 1)}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((page) => page + 1)}
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                </div>
+              )}
             </article>
 
-            <article className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article className="flex h-[500px] min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2.5">
                 <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600">
                   <ClipboardCheck className="h-4 w-4" />
                 </div>
                 <h2 className="font-semibold">Próximos pasos</h2>
               </div>
-              <div className="relative mt-5 space-y-3">
+              <div className="relative mt-5 min-h-0 flex-1 overflow-y-auto pr-2">
                 <div className="absolute bottom-7 left-[11px] top-4 w-px bg-slate-200" />
-                <NextStep
-                  icon={ClipboardCheck}
-                  title="Completar consentimiento"
-                  caseId="CAS-20260921-0002"
-                  description="Revisa y acepta los términos para continuar con el estudio."
-                  action="Completar"
-                  active
-                />
-                <NextStep
-                  icon={Upload}
-                  title="Cargar archivo pendiente"
-                  caseId="CAS-20260918-0001"
-                  description="Adjunta las imágenes o documentos solicitados por tu centro médico."
-                  action="Cargar"
-                />
-                <NextStep
-                  icon={FileText}
-                  title="Revisar resultado disponible"
-                  caseId="CAS-20260910-0005"
-                  description="Ya puedes consultar el resultado de tu estudio."
-                  action="Ver resultado"
-                  success
-                />
+                <div className="space-y-3">
+                  <NextStep
+                    icon={ClipboardCheck}
+                    title="Completar consentimiento"
+                    caseId="CAS-20260921-0002"
+                    description="Revisa y acepta los términos para continuar con el estudio."
+                    action="Completar"
+                    active
+                  />
+                  <NextStep
+                    icon={Upload}
+                    title="Cargar archivo pendiente"
+                    caseId="CAS-20260918-0001"
+                    description="Adjunta las imágenes o documentos solicitados por tu centro médico."
+                    action="Cargar"
+                  />
+                  <NextStep
+                    icon={FileText}
+                    title="Revisar resultado disponible"
+                    caseId="CAS-20260910-0005"
+                    description="Ya puedes consultar el resultado de tu estudio."
+                    action="Ver resultado"
+                    success
+                  />
+                  <NextStep
+                    icon={ClipboardCheck}
+                    title="Firmar autorización médica"
+                    caseId="CAS-20260901-0004"
+                    description="Confirma la autorización necesaria para continuar con tu estudio."
+                    action="Firmar"
+                  />
+                  <NextStep
+                    icon={Upload}
+                    title="Completar documentos"
+                    caseId="CAS-20260828-0006"
+                    description="Falta adjuntar la orden médica y la identificación del paciente."
+                    action="Adjuntar"
+                  />
+                  <NextStep
+                    icon={FileText}
+                    title="Descargar informe médico"
+                    caseId="CAS-20260820-0007"
+                    description="El informe final está listo para descargar y compartir."
+                    action="Descargar"
+                    success
+                  />
+                  <NextStep
+                    icon={ClipboardCheck}
+                    title="Agendar seguimiento"
+                    caseId="CAS-20260815-0008"
+                    description="Programa una cita de seguimiento con tu centro médico."
+                    action="Agendar"
+                  />
+                </div>
               </div>
             </article>
           </section>
 
           <section className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <article className="self-start rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600">
@@ -381,36 +566,16 @@ export const DashboardPage: React.FC = () => {
                   />
                 </a>
               </div>
-              <div className="mt-5 space-y-4 relative">
-                <ActivityItem
-                  icon={CheckCircle2}
-                  tone="emerald"
-                  title="Resultado publicado"
-                  description="El resultado del caso CAS-20260910-0005 ya está disponible."
-                  date="20/9/2026, 20:17"
-                />
-                <ActivityItem
-                  icon={FileText}
-                  tone="indigo"
-                  title="Archivo cargado"
-                  description="Has cargado un archivo para el caso CAS-20260918-0001."
-                  date="18/9/2026, 16:23"
-                />
-                <ActivityItem
-                  icon={Check}
-                  tone="blue"
-                  title="Consentimiento aceptado"
-                  description="Has aceptado el consentimiento del caso CAS-20260905-0003."
-                  date="5/9/2026, 09:16"
-                />
-                <ActivityItem
-                  icon={BellRing}
-                  tone="rose"
-                  title="Notificación enviada"
-                  description="Te hemos enviado una notificación sobre el caso CAS-20260921-0002."
-                  date="5/9/2026, 09:15"
-                />
+              <div className="relative mt-5">
                 <div className="absolute bottom-7 left-[11px] top-4 w-px bg-slate-200"></div>
+                <div className="space-y-4">
+                  {recentActivities.slice(0, 5).map((activity, index) => (
+                    <ActivityItem
+                      key={`${activity.title}-${index}`}
+                      {...activity}
+                    />
+                  ))}
+                </div>
               </div>
             </article>
 
