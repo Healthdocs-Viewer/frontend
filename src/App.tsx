@@ -19,7 +19,11 @@ export const App: React.FC = () => {
 
   if (window.location.pathname === '/card-demo') return <CardDemoPage />;
   if (window.location.pathname === '/dashboard') return <DashboardPage />;
-  if (window.location.pathname === '/dashboard/mis-casos') return <DashboardSectionPage section="mis-casos" />;
+  // La ruta canónica de casos es independiente del dashboard. Se conserva la
+  // ruta anterior para no romper enlaces existentes o marcadores guardados.
+  if (window.location.pathname === '/mis-casos' || window.location.pathname === '/dashboard/mis-casos') {
+    return <DashboardSectionPage section="mis-casos" />;
+  }
   if (window.location.pathname === '/dashboard/resultados') return <DashboardSectionPage section="resultados" />;
   if (window.location.pathname === '/notificaciones') return <NotificationsPage />;
 

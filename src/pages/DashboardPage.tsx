@@ -211,7 +211,7 @@ export const DashboardPage: React.FC = () => {
           >
             {[
               ["Inicio", Home, "/dashboard"],
-              ["Mis casos", BriefcaseBusiness, "/dashboard/mis-casos"],
+              ["Mis casos", BriefcaseBusiness, "/mis-casos"],
               ["Resultados", FileText, "/dashboard/resultados"],
               ["Notificaciones", Bell, "/notificaciones"],
             ].map(([label, Icon, href]) => (
@@ -305,7 +305,7 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div className="flex min-w-40 flex-col gap-2">
                 <a
-                  href="/dashboard/mis-casos"
+                  href="/mis-casos"
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-center text-sm font-semibold text-white"
                 >
                   <Plus className="h-4 w-4" />
@@ -363,7 +363,7 @@ export const DashboardPage: React.FC = () => {
                   <h2 className="font-semibold">Mis casos recientes</h2>
                 </div>
                 <a
-                  href="/dashboard/mis-casos"
+                  href="/mis-casos"
                   className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
                 >
                   Ver todos{" "}
