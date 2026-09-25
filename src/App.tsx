@@ -12,6 +12,7 @@ import { ShieldAlert, LogOut } from 'lucide-react';
 import { CardDemoPage } from './pages/CardDemoPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DashboardSectionPage } from './pages/DashboardSectionPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 
 export const App: React.FC = () => {
   const { user, token, isLoading } = useAuth();
@@ -20,7 +21,7 @@ export const App: React.FC = () => {
   if (window.location.pathname === '/dashboard') return <DashboardPage />;
   if (window.location.pathname === '/dashboard/mis-casos') return <DashboardSectionPage section="mis-casos" />;
   if (window.location.pathname === '/dashboard/resultados') return <DashboardSectionPage section="resultados" />;
-  if (window.location.pathname === '/dashboard/notificaciones') return <DashboardSectionPage section="notificaciones" />;
+  if (window.location.pathname === '/notificaciones') return <NotificationsPage />;
 
   if (isLoading) {
     return (
