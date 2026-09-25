@@ -9,9 +9,18 @@ import { Navbar } from './components/Navbar';
 import { ForbiddenAlert } from './components/ForbiddenAlert';
 import { notifyUnauthorized, notifyForbidden } from './services/apiClient';
 import { ShieldAlert, LogOut } from 'lucide-react';
+import { CardDemoPage } from './pages/CardDemoPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { DashboardSectionPage } from './pages/DashboardSectionPage';
 
 export const App: React.FC = () => {
   const { user, token, isLoading } = useAuth();
+
+  if (window.location.pathname === '/card-demo') return <CardDemoPage />;
+  if (window.location.pathname === '/dashboard') return <DashboardPage />;
+  if (window.location.pathname === '/dashboard/mis-casos') return <DashboardSectionPage section="mis-casos" />;
+  if (window.location.pathname === '/dashboard/resultados') return <DashboardSectionPage section="resultados" />;
+  if (window.location.pathname === '/dashboard/notificaciones') return <DashboardSectionPage section="notificaciones" />;
 
   if (isLoading) {
     return (

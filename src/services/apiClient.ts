@@ -97,6 +97,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers,
   });
 
+  console.log(res);
 
   if (res.status === 401) {
     let errData: ErrorResponse = {
@@ -311,9 +312,7 @@ export const apiClient = {
   },
 
   files: {
-    async completeUpload(
-      fileId: string,
-    ): Promise<CompleteUploadResponse> {
+    async completeUpload(fileId: string): Promise<CompleteUploadResponse> {
       const token = getStoredToken();
       if (!token) throw new Error("No autenticado");
 
@@ -329,12 +328,9 @@ export const apiClient = {
         }
       }
 
-      return request<CompleteUploadResponse>(
-        `/files/${fileId}/complete`,
-        {
-          method: "POST",
-        },
-      );
+      return request<CompleteUploadResponse>(`/files/${fileId}/complete`, {
+        method: "POST",
+      });
     },
   },
 
@@ -387,13 +383,19 @@ export const apiClient = {
       );
     },
 
-    async createResultDownload(caseId: string, resultId: string): Promise<DownloadIntent> {
+    async createResultDownload(
+      caseId: string,
+      resultId: string,
+    ): Promise<DownloadIntent> {
       if (isMockMode()) {
         const token = getStoredToken();
         if (!token) throw new Error("No autenticado");
         return mockBackendService.createResultDownload(token, caseId, resultId);
       }
-      return request<DownloadIntent>(`/internal/cases/${caseId}/results/${resultId}/download`, { method: "POST" });
+      return request<DownloadIntent>(
+        `/internal/cases/${caseId}/results/${resultId}/download`,
+        { method: "POST" },
+      );
     },
 
     async deleteResult(caseId: string, resultId: string): Promise<void> {
@@ -402,7 +404,9 @@ export const apiClient = {
         if (!token) throw new Error("No autenticado");
         return mockBackendService.deleteResult(token, caseId, resultId);
       }
-      return request<void>(`/internal/cases/${caseId}/results/${resultId}`, { method: "DELETE" });
+      return request<void>(`/internal/cases/${caseId}/results/${resultId}`, {
+        method: "DELETE",
+      });
     },
 
     async createResultUpload(

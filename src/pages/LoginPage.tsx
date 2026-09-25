@@ -191,7 +191,7 @@ export const LoginPage: React.FC = () => {
                       <p className="text-xs font-semibold text-slate-800">
                         {cred.email}
                       </p>
-                      <p className="text-[11px] text-slate-500 capitalize">
+            <p className="text-xs text-slate-500 capitalize">
                         Rol: <span className="font-medium text-slate-700">{cred.label}</span>
                       </p>
                     </div>

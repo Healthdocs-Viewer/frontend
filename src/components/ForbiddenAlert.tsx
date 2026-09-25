@@ -20,7 +20,7 @@ export const ForbiddenAlert: React.FC = () => {
           <p className="text-xs text-amber-700 mt-1 leading-relaxed">
             {forbiddenMessage}
           </p>
-          <p className="text-[11px] text-amber-600 mt-1 italic">
+          <p className="text-xs text-amber-600 mt-1 italic">
             Tu rol o habilitación actual no permite realizar esta operación en este recurso.
           </p>
         </div>

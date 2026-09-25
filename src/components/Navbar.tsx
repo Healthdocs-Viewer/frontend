@@ -28,7 +28,7 @@ export const Navbar: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 text-lg tracking-tight">Healthdocs</span>
+          <span className="font-bold text-slate-900 text-base tracking-tight">Healthdocs</span>
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
                 Viewer MVP
               </span>
@@ -76,7 +76,7 @@ export const Navbar: React.FC = () => {
                 <div className="hidden sm:block text-left">
                   <p className="text-xs font-medium text-slate-800 leading-tight">{user.email}</p>
                   <span
-                    className={`inline-block text-[11px] font-medium uppercase px-2 py-0.2 rounded-full border mt-0.5 ${getRoleBadge(
+className={`inline-block text-xs font-medium uppercase px-2 py-0.5 rounded-full border mt-0.5 ${getRoleBadge(
                       user.role
                     )}`}
                   >

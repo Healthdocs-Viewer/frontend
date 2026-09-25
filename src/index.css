@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-background: 222 47% 97%;
+  --color-surface: 0 0% 100%;
+  --color-content: 222 47% 11%;
+  --color-muted: 215 16% 47%;
+  --color-border: 214 32% 91%;
+  --color-primary: 239 84% 67%;
+  --color-primary-strong: 243 75% 59%;
+  --color-info: 217 91% 60%;
+  --color-success: 160 84% 31%;
+  --color-warning: 38 92% 50%;
+  --color-danger: 346 77% 50%;
+
+  --space-control: 0.5rem;
+  --space-card: 1.25rem;
+  --space-section: 1.5rem;
+  --space-page: 2rem;
+}
+
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
+
+/* Paleta clara del dashboard de /dashboard. */
+.dashboard-light [class~="bg-[#171717]"] { background-color: #ffffff !important; }
+.dashboard-light [class~="border-white/10"] { border-color: #e2e8f0 !important; }
+.dashboard-light [class~="bg-white/5"] { background-color: #f8fafc !important; }
+.dashboard-light [class~="bg-black/30"] { background-color: #f1f5f9 !important; }
+.dashboard-light [class~="bg-white/10"] { background-color: #f1f5f9 !important; }
+.dashboard-light [class~="bg-white/15"] { background-color: #e2e8f0 !important; }
+.dashboard-light [class~="text-white"] { color: #0f172a !important; }
+.dashboard-light [class~="text-slate-100"] { color: #0f172a !important; }
+.dashboard-light [class~="text-slate-300"] { color: #475569 !important; }
+.dashboard-light [class~="divide-white/10"] > :not([hidden]) ~ :not([hidden]) { border-color: #e2e8f0 !important; }

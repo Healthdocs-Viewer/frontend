@@ -275,12 +275,12 @@ export const PatientDashboard: React.FC = () => {
                     <span className="text-xs font-mono font-semibold text-slate-800 truncate">
                       {item.referenceCode || item.id}
                     </span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
                       {item.status}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1 truncate">{item.studyType}</p>
-                  <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
+              <p className="text-xs text-slate-500 mt-1 truncate">{item.studyType}</p>
+            <div className="flex items-center gap-1 text-xs text-slate-400 mt-2">
                     <Clock className="w-3 h-3" />
                     <span>{new Date(item.createdAt).toLocaleString()}</span>
                   </div>
@@ -301,7 +301,7 @@ export const PatientDashboard: React.FC = () => {
                   return (
                     <div key={label} className="min-w-0">
                       <div className={`h-1.5 rounded-full mb-2 ${done ? 'bg-emerald-500' : active ? 'bg-indigo-600' : 'bg-slate-200'}`} />
-                      <div className={`text-[11px] font-semibold truncate ${active ? 'text-indigo-700' : 'text-slate-500'}`}>
+              <div className={`text-xs font-semibold truncate ${active ? 'text-indigo-700' : 'text-slate-500'}`}>
                         {number}. {label}
                       </div>
                     </div>
@@ -406,7 +406,7 @@ export const PatientDashboard: React.FC = () => {
                         {uploadFile ? uploadFile.name : 'Seleccionar archivo'}
                       </span>
                       {uploadFile && (
-                        <span className="text-[11px] text-slate-500 mt-1">
+              <span className="text-xs text-slate-500 mt-1">
                           {(uploadFile.size / 1024).toFixed(1)} KB · {uploadFile.type || 'application/octet-stream'}
                         </span>
                       )}
@@ -492,7 +492,7 @@ export const PatientDashboard: React.FC = () => {
                       <FileCheck className="w-4 h-4" />
                       <span>Resultado disponible</span>
                     </div>
-                    <span className="text-[11px] text-emerald-600">
+              <span className="text-xs text-emerald-600">
                       {new Date(patientResult.availableAt).toLocaleString()}
                     </span>
                   </div>
