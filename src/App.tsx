@@ -13,6 +13,7 @@ import { CardDemoPage } from './pages/CardDemoPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DashboardSectionPage } from './pages/DashboardSectionPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { ConfiguracionPage } from './pages/ConfiguracionPage';
 
 export const App: React.FC = () => {
   const { user, token, isLoading } = useAuth();
@@ -25,6 +26,11 @@ export const App: React.FC = () => {
     return <DashboardSectionPage section="mis-casos" />;
   }
   if (window.location.pathname === '/dashboard/resultados') return <DashboardSectionPage section="resultados" />;
+  if (
+    window.location.pathname === '/dashboard/Configuracion' ||
+    window.location.pathname === '/dashboard/configuracion' ||
+    window.location.pathname === '/dashboard/configuration'
+  ) return <ConfiguracionPage />;
   if (window.location.pathname === '/notificaciones') return <NotificationsPage />;
 
   if (isLoading) {
