@@ -213,7 +213,7 @@ export const DashboardPage: React.FC = () => {
               ["Inicio", Home, "/dashboard"],
               ["Mis casos", BriefcaseBusiness, "/dashboard/mis-casos"],
               ["Resultados", FileText, "/dashboard/resultados"],
-              ["Notificaciones", Bell, "/dashboard/notificaciones"],
+              ["Notificaciones", Bell, "/notificaciones"],
             ].map(([label, Icon, href]) => (
               <a
                 key={label as string}

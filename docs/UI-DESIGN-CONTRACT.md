@@ -21,7 +21,7 @@ Las métricas administrativas, como adquisición, retención, visitantes o creci
 - Diseñar mobile-first.
 - Usar `bg-slate-50` como fondo general de las páginas claras.
 - Usar `space-y-6` para separar las secciones principales.
-- Usar `gap-4` o `gap-5` en grids y grupos de contenido.
+- Usar `gap-4` o `gap-5` en grids y grupos de contenido.e 
 - No usar grids fijas sin breakpoint.
 - Las secciones de dos columnas deben colapsar a una columna en mobile y tablet:
 
