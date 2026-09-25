@@ -81,7 +81,7 @@ export const NotificationsPage: React.FC = () => {
             {!collapsed && <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Sistema</p>}
             <a href="/dashboard/ayuda" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100"><CircleHelp className="h-4 w-4" />{!collapsed && "Ayuda"}</a>
             <a href="/dashboard/configuracion" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100"><Settings className="h-4 w-4" />{!collapsed && "Configuración"}</a>
-            <Button variant="ghost" size="sm" onClick={() => setCollapsed((value) => !value)} className="mt-2 w-full justify-start"><Menu className="h-4 w-4" />{!collapsed && "Contraer menú"}</Button>
+            <button type="button" aria-label="Contraer menú" onClick={() => setCollapsed((value) => !value)} className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"><Menu className="h-4 w-4" aria-hidden="true" />{!collapsed && "Contraer menú"}</button>
           </div>
         </div>
       </aside>
