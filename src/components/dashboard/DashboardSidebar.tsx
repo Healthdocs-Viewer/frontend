@@ -4,24 +4,32 @@ import {
   Bell,
   BriefcaseBusiness,
   CircleHelp,
+  FolderSearch,
   FileText,
   Home,
   Menu,
   Plus,
   Settings,
+  Send,
+  ClipboardList,
+  GraduationCap,
+  UserPlus,
 } from "lucide-react";
 import { navigateDashboard } from "./dashboardNavigation";
+import type { UserRole } from "../../types/api";
 
 type DashboardSidebarProps = {
   activePath: string;
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
+  role?: UserRole;
 };
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   activePath,
   collapsed: controlledCollapsed,
   onCollapsedChange,
+  role = "paciente",
 }) => {
   const [internalCollapsed, setInternalCollapsed] = React.useState(false);
   const collapsed = controlledCollapsed ?? internalCollapsed;
@@ -55,6 +63,18 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     ["Mis casos", BriefcaseBusiness, "/mis-casos"],
     ["Resultados", FileText, "/resultados"],
     ["Notificaciones", Bell, "/notificaciones"],
+  ] as const;
+
+  const teachingItems = [
+    ["Casos disponibles", FolderSearch, "/docencia/casos"],
+    ["Asignaciones", UserPlus, "/docencia/asignaciones"],
+    ["Resultados por publicar", Send, "/docencia/resultados"],
+  ] as const;
+
+  const studentItems = [
+    ["Casos asignados", ClipboardList, "/estudiante/casos"],
+    ["Mis evaluaciones", GraduationCap, "/estudiante/evaluaciones"],
+    ["Resultados recibidos", FileText, "/estudiante/resultados"],
   ] as const;
 
   return (
@@ -94,6 +114,58 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               </a>
             );
           })}
+
+          <div className="pt-5">
+            {!collapsed && (
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Docencia
+              </p>
+            )}
+            <div className="space-y-1 border-l border-slate-200 pl-2">
+              {teachingItems.map(([label, Icon, href]) => {
+                const active = activePath === href;
+                return (
+                  <a
+                    key={label}
+                    href={href}
+                    onClick={(event) => handleNavigation(event, href)}
+                    aria-current={active ? "page" : undefined}
+                    title={collapsed ? label : undefined}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${active ? "bg-slate-100 font-medium text-slate-900" : "text-slate-600 hover:bg-slate-100"}`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {!collapsed && label}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pt-5">
+            {!collapsed && (
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Estudiantes
+              </p>
+            )}
+            <div className="space-y-1 border-l border-slate-200 pl-2">
+              {studentItems.map(([label, Icon, href]) => {
+                const active = activePath === href;
+                return (
+                  <a
+                    key={label}
+                    href={href}
+                    onClick={(event) => handleNavigation(event, href)}
+                    aria-current={active ? "page" : undefined}
+                    title={collapsed ? label : undefined}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${active ? "bg-slate-100 font-medium text-slate-900" : "text-slate-600 hover:bg-slate-100"}`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    {!collapsed && label}
+                  </a>
+                );
+              })}
+            </div>
+          </div>
         </nav>
 
         <div className="mt-auto">
