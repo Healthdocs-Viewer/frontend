@@ -97,8 +97,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers,
   });
 
-  console.log(res);
-
   if (res.status === 401) {
     let errData: ErrorResponse = {
       code: "UNAUTHORIZED",

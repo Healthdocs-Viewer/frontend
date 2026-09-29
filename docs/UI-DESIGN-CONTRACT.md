@@ -21,7 +21,7 @@ Las métricas administrativas, como adquisición, retención, visitantes o creci
 - Diseñar mobile-first.
 - Usar `bg-slate-50` como fondo general de las páginas claras.
 - Usar `space-y-6` para separar las secciones principales.
-- Usar `gap-4` o `gap-5` en grids y grupos de contenido.e 
+- Usar `gap-4` o `gap-5` en grids y grupos de contenido.
 - No usar grids fijas sin breakpoint.
 - Las secciones de dos columnas deben colapsar a una columna en mobile y tablet:
 
@@ -175,3 +175,97 @@ Esto facilita reutilización, traducciones, filtros y cambios de UI.
 ## 13. Regla de evolución
 
 Antes de introducir una nueva clase, variante o componente, comprobar si puede resolverse con los tokens y componentes existentes. Si una necesidad se repite en dos o más pantallas, convertirla en un componente reutilizable o en un token documentado.
+
+## 14. Arquitectura del dashboard
+
+- `DashboardPage` es la entrada principal del dashboard.
+- `DashboardLayout` es el único responsable de renderizar la estructura compartida:
+  - `DashboardSidebar`.
+  - `DashboardNavbar`.
+  - El contenedor principal.
+- Los contenidos internos no deben declarar otro `aside`, `header`, `main` global, sidebar o navbar.
+- Los contenidos específicos del dashboard deben vivir en `src/components/dashboard/`.
+- Las páginas completas deben vivir en `src/pages/`.
+- Los nombres de los componentes deben describir su responsabilidad, por ejemplo:
+  - `DashboardHomeContent`.
+  - `DashboardCasesContent`.
+  - `DashboardResultsContent`.
+  - `DashboardNotificationsContent`.
+  - `DashboardSettingsContent`.
+- Un componente de contenido debe encargarse de su propia sección, no de construir el layout general.
+- No duplicar componentes visuales existentes para resolver una necesidad puntual.
+
+## 15. Navegación interna y rutas
+
+- Las rutas internas del dashboard deben utilizar navegación SPA.
+- Usar `history.pushState` para actualizar la URL sin recargar toda la aplicación.
+- Escuchar `popstate` para soportar correctamente los botones atrás y adelante del navegador.
+- Centralizar las rutas dashboard en un único archivo o módulo.
+- Mantener `href` en los enlaces internos para conservar accesibilidad y permitir Ctrl/Cmd + click.
+- Los enlaces deben navegar; los botones deben ejecutar acciones.
+- No usar `href="#"` ni recargas manuales para cambiar de sección.
+- El cambio de ruta debe reemplazar únicamente el contenido de `DashboardContent`; el layout compartido debe permanecer montado.
+
+## 16. Librería y componentes existentes
+
+- Usar React y TypeScript con las versiones y configuración existentes del proyecto.
+- Usar exclusivamente `lucide-react` para iconografía.
+- Reutilizar los componentes de `src/components/ui/` antes de crear componentes equivalentes:
+  - `Button`.
+  - `IconButton`.
+  - `Badge`.
+  - `Card` y sus subcomponentes.
+  - `cn`.
+- Usar los componentes de dominio existentes en `src/components/` cuando resuelvan la necesidad.
+- No introducir otra librería de componentes, iconos, estilos o utilidades sin justificarlo y documentarlo.
+- No copiar y pegar la implementación de un componente base para crear una variante local.
+- Si una variante visual se repite, añadirla al componente base o convertirla en un componente de dominio reutilizable.
+
+## 17. Diseño limpio y consistencia visual
+
+- Mantener interfaces simples, ordenadas y con una jerarquía visual clara.
+- Cada pantalla debe tener un objetivo principal identificable.
+- Evitar saturar una vista con tarjetas, acciones o métricas que no sean necesarias para la tarea.
+- Agrupar información relacionada y separar visualmente los grupos no relacionados.
+- Mantener una cantidad razonable de elementos por sección y priorizar el contenido más importante.
+- Usar espacios en blanco para mejorar la lectura; no resolver la densidad agregando más bordes o sombras.
+- Mantener una sola acción primaria por contexto cuando sea posible.
+- Evitar combinaciones innecesarias de colores, gradientes, sombras, bordes o estilos decorativos.
+- Las tarjetas deben tener una función clara; no usar tarjetas únicamente para envolver contenido.
+- Preferir composiciones sobrias y funcionales sobre elementos ornamentales.
+- Los estados vacíos, de carga, error y éxito deben tener una presentación clara y consistente.
+- Las interfaces deben conservar coherencia entre desktop, tablet y mobile.
+
+## 18. Preparación para múltiples roles
+
+- El layout debe poder compartirse entre paciente, estudiante y profesor/coordinador.
+- No duplicar `DashboardLayout` para cada rol.
+- El contenido y la configuración del sidebar pueden variar por rol, pero la estructura visual debe permanecer reutilizable.
+- Separar la configuración de navegación y permisos de la presentación visual.
+- Preparar los componentes para recibir datos y configuración mediante props.
+- No hardcodear información específica de un rol dentro de componentes que posteriormente serán compartidos.
+- Las diferencias de rol deben expresarse mediante tipos, configuración o composición, no mediante duplicación completa de páginas.
+
+## 19. Datos y estado de interfaz
+
+- Mantener los datos de presentación separados de la estructura JSX cuando facilite la lectura o reutilización.
+- Preferir objetos tipados sobre arrays posicionales.
+- Los estados locales deben vivir en el componente que controla la interacción correspondiente.
+- No duplicar el mismo estado en el layout y en el contenido sin una razón clara.
+- Los datos mock deben identificarse claramente y poder reemplazarse por datos de API sin rehacer la interfaz.
+- No mezclar lógica de autenticación, permisos o llamadas de API dentro de componentes puramente visuales.
+
+## 20. Checklist arquitectónico antes de entregar
+
+- [ ] El contenido está ubicado en la carpeta correcta.
+- [ ] El nombre del componente refleja su responsabilidad.
+- [ ] No se duplican sidebar, navbar ni layout global.
+- [ ] Se reutilizan los componentes y la librería existentes.
+- [ ] La navegación interna no recarga la aplicación.
+- [ ] La ruta está registrada en el módulo central de rutas.
+- [ ] La vista funciona con datos vacíos, cargando, error y éxito cuando corresponda.
+- [ ] La interfaz es clara y no está visualmente saturada.
+- [ ] La pantalla funciona en mobile, tablet y desktop.
+- [ ] Se verificaron foco, teclado, etiquetas y estados disabled.
+- [ ] `npm run build` finaliza correctamente.
+- [ ] Las pruebas relacionadas se ejecutaron o se documentaron sus fallos.

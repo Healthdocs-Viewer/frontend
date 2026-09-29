@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { PatientDashboard } from './pages/PatientDashboard';
-import { StudentDashboard } from './pages/StudentDashboard';
+import { StudentDashboard } from './pages/legacy/StudentDashboard';
 import { ProfessorDashboard } from './pages/ProfessorDashboard';
 import { PatientResultPage } from './pages/PatientResultPage';
 import { Navbar } from './components/Navbar';
@@ -11,28 +11,13 @@ import { notifyUnauthorized, notifyForbidden } from './services/apiClient';
 import { ShieldAlert, LogOut } from 'lucide-react';
 import { CardDemoPage } from './pages/CardDemoPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { DashboardSectionPage } from './pages/DashboardSectionPage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { ConfiguracionPage } from './pages/ConfiguracionPage';
+import { isDashboardRoute } from './components/dashboard/dashboardNavigation';
 
 export const App: React.FC = () => {
   const { user, token, isLoading } = useAuth();
 
   if (window.location.pathname === '/card-demo') return <CardDemoPage />;
-  if (window.location.pathname === '/dashboard') return <DashboardPage />;
-  // La ruta canónica de casos es independiente del dashboard. Se conserva la
-  // ruta anterior para no romper enlaces existentes o marcadores guardados.
-  if (window.location.pathname === '/mis-casos' || window.location.pathname === '/dashboard/mis-casos') {
-    return <DashboardSectionPage section="mis-casos" />;
-  }
-  if (window.location.pathname === '/dashboard/resultados') return <DashboardSectionPage section="resultados" />;
-  if (
-    window.location.pathname === '/dashboard/Configuracion' ||
-    window.location.pathname === '/dashboard/configuracion' ||
-    window.location.pathname === '/dashboard/configuration'
-  ) return <ConfiguracionPage />;
-  if (window.location.pathname === '/notificaciones') return <NotificationsPage />;
-
+  if (isDashboardRoute(window.location.pathname)) return <DashboardPage />;
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
