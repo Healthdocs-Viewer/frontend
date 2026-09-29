@@ -21,18 +21,17 @@
   --space-page: 2rem;
 }
 
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+.dark {
+  --color-background: 222 47% 7%;
+  --color-surface: 222 47% 11%;
+  --color-content: 210 40% 98%;
+  --color-muted: 215 20% 65%;
+  --color-border: 217 33% 25%;
 }
 
-/* Paleta clara del dashboard de /dashboard. */
-.dashboard-light [class~="bg-[#171717]"] { background-color: #ffffff !important; }
-.dashboard-light [class~="border-white/10"] { border-color: #e2e8f0 !important; }
-.dashboard-light [class~="bg-white/5"] { background-color: #f8fafc !important; }
-.dashboard-light [class~="bg-black/30"] { background-color: #f1f5f9 !important; }
-.dashboard-light [class~="bg-white/10"] { background-color: #f1f5f9 !important; }
-.dashboard-light [class~="bg-white/15"] { background-color: #e2e8f0 !important; }
-.dashboard-light [class~="text-white"] { color: #0f172a !important; }
-.dashboard-light [class~="text-slate-100"] { color: #0f172a !important; }
-.dashboard-light [class~="text-slate-300"] { color: #475569 !important; }
-.dashboard-light [class~="divide-white/10"] > :not([hidden]) ~ :not([hidden]) { border-color: #e2e8f0 !important; }
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: hsl(var(--color-background));
+  color: hsl(var(--color-content));
+}
+
