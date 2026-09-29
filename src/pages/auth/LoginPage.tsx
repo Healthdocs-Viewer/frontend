@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { QUICK_LOGIN_CREDENTIALS } from '../services/mockApi';
+import { useAuth } from '../../context/AuthContext';
+import { QUICK_LOGIN_CREDENTIALS } from '../../services/mockApi';
 import { Shield, Lock, User, ArrowRight, UserCheck, AlertCircle, ShieldAlert } from 'lucide-react';
 
 /**

@@ -10,17 +10,50 @@ import {
   Plus,
   Settings,
 } from "lucide-react";
+import { navigateDashboard } from "./dashboardNavigation";
 
 type DashboardSidebarProps = {
   activePath: string;
+  collapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 };
 
-export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ activePath }) => {
-  const [collapsed, setCollapsed] = React.useState(false);
+export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
+  activePath,
+  collapsed: controlledCollapsed,
+  onCollapsedChange,
+}) => {
+  const [internalCollapsed, setInternalCollapsed] = React.useState(false);
+  const collapsed = controlledCollapsed ?? internalCollapsed;
+
+  const toggleCollapsed = () => {
+    const nextCollapsed = !collapsed;
+    setInternalCollapsed(nextCollapsed);
+    onCollapsedChange?.(nextCollapsed);
+  };
+
+  const handleNavigation = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    navigateDashboard(href);
+  };
+
   const items = [
-    ["Inicio", Home, "/dashboard"],
+    ["Inicio", Home, "/"],
     ["Mis casos", BriefcaseBusiness, "/mis-casos"],
-    ["Resultados", FileText, "/dashboard/resultados"],
+    ["Resultados", FileText, "/resultados"],
     ["Notificaciones", Bell, "/notificaciones"],
   ] as const;
 
@@ -38,6 +71,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ activePath }
 
         <a
           href="/mis-casos"
+          onClick={(event) => handleNavigation(event, "/mis-casos")}
           className="mt-7 flex items-center gap-3 rounded-lg bg-slate-900 px-3 py-2.5 text-sm font-medium text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
@@ -51,6 +85,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ activePath }
               <a
                 key={label}
                 href={href}
+                onClick={(event) => handleNavigation(event, href)}
                 aria-current={active ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 ${active ? "bg-slate-100 font-medium text-slate-900" : "hover:bg-slate-100"}`}
               >
@@ -63,17 +98,25 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ activePath }
 
         <div className="mt-auto">
           {!collapsed && <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Sistema</p>}
-          <a href="/dashboard/ayuda" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100">
+          <a
+            href="/ayuda"
+            onClick={(event) => handleNavigation(event, "/ayuda")}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
             <CircleHelp className="h-4 w-4" aria-hidden="true" />
             {!collapsed && "Ayuda"}
           </a>
-          <a href="/dashboard/configuracion" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100">
+          <a
+            href="/configuracion"
+            onClick={(event) => handleNavigation(event, "/configuracion")}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
             <Settings className="h-4 w-4" aria-hidden="true" />
             {!collapsed && "Configuración"}
           </a>
           <button
             type="button"
-            onClick={() => setCollapsed((value) => !value)}
+            onClick={toggleCollapsed}
             className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             <Menu className="h-4 w-4" aria-hidden="true" />

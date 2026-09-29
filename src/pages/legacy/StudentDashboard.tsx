@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { apiClient } from '../services/apiClient';
-import { InternalCaseSummary } from '../types/api';
-import { InternalCaseList } from '../components/internal/InternalCaseList';
-import { InternalCaseDetail } from '../components/internal/InternalCaseDetail';
-import { ResultUploadCard } from '../components/internal/ResultUploadCard';
+import { apiClient } from '../../services/apiClient';
+import { InternalCaseSummary } from '../../types/api';
+import { InternalCaseList } from '../../components/internal/InternalCaseList';
+import { InternalCaseDetail } from '../../components/internal/InternalCaseDetail';
+import { ResultUploadCard } from '../../components/internal/ResultUploadCard';
 import { RefreshCw, GraduationCap } from 'lucide-react';
 
 export const StudentDashboard: React.FC = () => {
