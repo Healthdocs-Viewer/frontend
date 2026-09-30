@@ -16,11 +16,8 @@ import {
   GraduationCap,
   UserPlus,
 } from "lucide-react";
-<<<<<<< HEAD
 import { navigateDashboard } from "./dashboardNavigation";
 import type { UserRole } from "../../types/api";
-=======
->>>>>>> d734a2d (adding dark theme to the project)
 
 type DashboardSidebarProps = {
   activePath: string;
@@ -44,6 +41,24 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     onCollapsedChange?.(nextCollapsed);
   };
 
+  const handleNavigation = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    navigateDashboard(href);
+  };
+  
   const items = [
     ["Inicio", Home, "/"],
     ["Mis casos", BriefcaseBusiness, "/mis-casos"],
@@ -72,7 +87,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           <div className="grid h-7 w-7 place-items-center rounded-full border-2 border-slate-900">
             <Activity className="h-4 w-4" aria-hidden="true" />
           </div>
-          {!collapsed && <span className="text-base font-semibold">Healthdocs</span>}
+          {!collapsed && (
+            <span className="text-base font-semibold">Healthdocs</span>
+          )}
         </div>
 
         <NavLink
@@ -83,13 +100,18 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           {!collapsed && "Crear nuevo"}
         </NavLink>
 
-        <nav aria-label="Navegación principal" className="mt-5 space-y-1 text-sm text-slate-600">
+        <nav
+          aria-label="Navegación principal"
+          className="mt-5 space-y-1 text-sm text-slate-600"
+        >
           {items.map(([label, Icon, href]) => {
             return (
               <NavLink
                 key={label}
                 to={href === "/" ? "/dashboard" : href}
-                className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2.5 ${isActive ? "bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white" : "hover:bg-slate-100 dark:hover:bg-slate-800"}`}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg px-3 py-2.5 ${isActive ? "bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white" : "hover:bg-slate-100 dark:hover:bg-slate-800"}`
+                }
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 {!collapsed && label}
@@ -151,7 +173,11 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         </nav>
 
         <div className="mt-auto">
-          {!collapsed && <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Sistema</p>}
+          {!collapsed && (
+            <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Sistema
+            </p>
+          )}
           <NavLink
             to="/ayuda"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
