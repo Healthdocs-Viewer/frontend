@@ -1,7 +1,15 @@
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-export const RoleRoute = () => {
-  return (
-    <div>uwu</div>
-  );
+type RoleRouteProps = {
+  allowedRoles: string[];
+};
+
+export const RoleRoute = ({ allowedRoles }: RoleRouteProps) => {
+  const { user } = useAuth();
+
+  if (!user) return <Navigate to="/login" replace />;
+  if (!allowedRoles.includes(user.role)) return <Navigate to="/dashboard" replace />;
+
+  return <Outlet />;
 };

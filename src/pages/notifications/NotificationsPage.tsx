@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   Bell,
   Check,
@@ -121,11 +122,14 @@ const notifications: Notification[] = [
 ];
 
 const iconStyles = {
-  success: "bg-emerald-100 text-emerald-600",
-  info: "bg-blue-100 text-blue-600",
-  primary: "bg-indigo-100 text-indigo-600",
-  warning: "bg-amber-100 text-amber-600",
-  neutral: "bg-slate-100 text-slate-500",
+  success:
+    "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300",
+  info: "bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300",
+  primary:
+    "bg-indigo-100 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300",
+  warning:
+    "bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300",
+  neutral: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300",
 };
 
 export const NotificationsPage: React.FC<{ embedded?: boolean }> = ({
@@ -166,207 +170,172 @@ export const NotificationsPage: React.FC<{ embedded?: boolean }> = ({
           Una vista rápida de tus estudios y casos médicos.
         </p>
       </div>
-      <Card className="min-w-0 overflow-hidden">
-        <div className="flex flex-wrap gap-2 border-b border-border p-4">
-          {(
-            [
-              "Todas",
-              "Nuevas",
-              "Casos",
-              "Resultados",
-              "Sistema",
-            ] as NotificationCategory[]
-          ).map((item) => (
-            <Button
-              key={item}
-              size="sm"
-              variant={category === item ? "outline" : "secondary"}
-              onClick={() => setCategory(item)}
-              className={cn(
-                category === item &&
-                  "border-indigo-300 bg-indigo-50 text-indigo-700",
-              )}
-            >
-              {item}
-              {item === "Todas"
-                ? ` (${notifications.length})`
-                : item === "Nuevas"
-                  ? ` (${unreadCount})`
-                  : ` (${notifications.filter((notification) => notification.category === item).length})`}
-            </Button>
-          ))}
-        </div>
-        <CardContent className="space-y-2 p-3 sm:p-4">
-          {visibleNotifications.map((notification) => {
-            const Icon = notification.icon;
-            const isUnread = !readIds.includes(notification.id);
-            return (
-              <button
-                type="button"
-                key={notification.id}
-                onClick={() => markRead(notification.id)}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)] lg:items-start">
+        <Card className="min-w-0 overflow-hidden lg:row-span-2">
+          <div className="flex flex-wrap gap-2 border-b border-border p-4">
+            {(
+              [
+                "Todas",
+                "Nuevas",
+                "Casos",
+                "Resultados",
+                "Sistema",
+              ] as NotificationCategory[]
+            ).map((item) => (
+              <Button
+                key={item}
+                size="sm"
+                variant={category === item ? "outline" : "secondary"}
+                onClick={() => setCategory(item)}
                 className={cn(
-                  "group flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors hover:border-indigo-200 hover:bg-indigo-50/30 sm:p-4",
-                  isUnread
-                    ? "border-indigo-100 bg-indigo-50/30"
-                    : "border-border bg-surface",
+                  category === item &&
+                    "border-indigo-300 bg-indigo-50 text-indigo-700",
                 )}
               >
-                <span
+                {item}
+                {item === "Todas"
+                  ? ` (${notifications.length})`
+                  : item === "Nuevas"
+                    ? ` (${unreadCount})`
+                    : ` (${notifications.filter((notification) => notification.category === item).length})`}
+              </Button>
+            ))}
+          </div>
+          <CardContent className="space-y-2 p-3 sm:p-4">
+            {visibleNotifications.map((notification) => {
+              const Icon = notification.icon;
+              const isUnread = !readIds.includes(notification.id);
+              return (
+                <button
+                  type="button"
+                  key={notification.id}
+                  onClick={() => markRead(notification.id)}
                   className={cn(
-                    "grid h-9 w-9 shrink-0 place-items-center rounded-full",
-                    iconStyles[notification.tone],
+                    "group flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors hover:border-indigo-200 hover:bg-indigo-50/30 dark:hover:border-indigo-800 dark:hover:bg-slate-800 sm:p-4",
+                    isUnread
+                      ? "border-indigo-200/80 bg-indigo-50/50 dark:border-indigo-800/80 dark:bg-slate-800/80"
+                      : "border-border bg-surface",
                   )}
                 >
-                  <Icon className="h-4 w-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <strong className="text-sm text-content">
-                      {notification.title}
-                    </strong>
-                    {isUnread && (
-                      <span className="h-2 w-2 rounded-full bg-indigo-600" />
+                  <span
+                    className={cn(
+                      "grid h-9 w-9 shrink-0 place-items-center rounded-full",
+                      iconStyles[notification.tone],
                     )}
+                  >
+                    <Icon className="h-4 w-4" />
                   </span>
-                  <span className="mt-1 block text-xs leading-5 text-muted">
-                    {notification.description}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <strong className="text-sm text-content">
+                        {notification.title}
+                      </strong>
+                      {isUnread && (
+                        <span className="h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                      )}
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-muted">
+                      {notification.description}
+                    </span>
                   </span>
-                </span>
-                <span className="hidden shrink-0 items-end gap-2 sm:flex sm:flex-col">
-                  <span className="flex items-center gap-2 text-xs text-muted">
-                    {notification.caseId && (
-                      <Badge variant="neutral">{notification.caseId}</Badge>
-                    )}
-                    {notification.date}
+                  <span className="hidden shrink-0 items-end gap-2 sm:flex sm:flex-col">
+                    <span className="flex items-center gap-2 text-xs text-muted">
+                      {notification.caseId && (
+                        <Badge variant="neutral">{notification.caseId}</Badge>
+                      )}
+                      {notification.date}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5" />
                   </span>
-                  <ChevronRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </button>
-            );
-          })}
-        </CardContent>
-      </Card>
+                </button>
+              );
+            })}
+          </CardContent>
+        </Card>
 
-      <div className="space-y-5">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4 text-muted" />
-              <CardTitle>Configuración de notificaciones</CardTitle>
-            </div>
-            <CardDescription>
-              Elige qué tipo de notificaciones deseas recibir.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {[
-              {
-                key: "cases",
-                title: "Actualizaciones de casos",
-                detail: "Estado, carga de archivos, asignación",
-              },
-              {
-                key: "results",
-                title: "Resultados disponibles",
-                detail: "Cuando un resultado esté listo",
-              },
-              {
-                key: "system",
-                title: "Notificaciones del sistema",
-                detail: "Avisos importantes y seguridad",
-              },
-            ].map((item) => (
-              <label
-                key={item.key}
-                className="flex cursor-pointer items-center justify-between gap-3 border-b border-slate-100 py-3 last:border-0"
-              >
-                <span className="flex items-center gap-3">
-                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600">
-                    <FolderOpen className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold">
-                      {item.title}
+        <div className="min-w-0 space-y-5">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4 text-muted" />
+                <CardTitle>Configuración de notificaciones</CardTitle>
+              </div>
+              <CardDescription>
+                Elige qué tipo de notificaciones deseas recibir.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {[
+                {
+                  key: "cases",
+                  title: "Actualizaciones de casos",
+                  detail: "Estado, carga de archivos, asignación",
+                },
+                {
+                  key: "results",
+                  title: "Resultados disponibles",
+                  detail: "Cuando un resultado esté listo",
+                },
+                {
+                  key: "system",
+                  title: "Notificaciones del sistema",
+                  detail: "Avisos importantes y seguridad",
+                },
+              ].map((item) => (
+                <label
+                  key={item.key}
+                  className="flex cursor-pointer items-center justify-between gap-3 border-b border-slate-200/80 py-3 last:border-0 dark:border-slate-700"
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600">
+                      <FolderOpen className="h-4 w-4" />
                     </span>
-                    <span className="block text-xs text-muted">
-                      {item.detail}
+                    <span>
+                      <span className="block text-sm font-semibold">
+                        {item.title}
+                      </span>
+                      <span className="block text-xs text-muted">
+                        {item.detail}
+                      </span>
                     </span>
                   </span>
-                </span>
-                <input
-                  type="checkbox"
-                  checked={settings[item.key as keyof typeof settings]}
-                  onChange={() =>
-                    setSettings((current) => ({
-                      ...current,
-                      [item.key]: !current[item.key as keyof typeof settings],
-                    }))
-                  }
-                  className="h-4 w-4 accent-indigo-600"
-                  aria-label={item.title}
-                />
-              </label>
-            ))}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CircleHelp className="h-4 w-4 text-primary" />
-              <CardTitle>¿No recibes notificaciones?</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs leading-5 text-muted">
-              Revisa tu correo no deseado o verifica la configuración de tu
-              cuenta. Si el problema persiste, contacta al equipo de soporte.
-            </p>
-            <Button variant="outline" size="sm" className="mt-4 w-full">
-              <Mail className="h-3.5 w-3.5" />
-              Contactar soporte
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col items-center justify-between gap-5 md:flex-row">
-          <div className="border-l-4 border-indigo-600 pl-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-500">
-              Portal del paciente
-            </p>
-            <h2 className="mt-2 text-2xl font-bold">
-              Bienvenido al portal del paciente
-            </h2>
-            <p className="mt-2 max-w-xl text-sm text-slate-500">
-              Gestiona tus estudios médicos, carga documentos, realiza el
-              seguimiento de tus casos y consulta tus resultados de forma segura
-              y sencilla.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 text-indigo-300">
-            <FileText className="h-14 w-14" />
-            <Folder className="h-12 w-12 text-blue-300" />
-            <CalendarClock className="h-14 w-14" />
-          </div>
-          <div className="flex min-w-40 flex-col gap-2">
-            <a
-              href="/mis-casos"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-center text-sm font-semibold text-white"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo caso
-            </a>
-            <a
-              href="/dashboard/resultados"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-5 py-2.5 text-center text-sm font-semibold text-slate-600"
-            >
-              <FileText className="h-4 w-4" />
-              Ver resultados
-            </a>
-          </div>
+                  <input
+                    type="checkbox"
+                    checked={settings[item.key as keyof typeof settings]}
+                    onChange={() =>
+                      setSettings((current) => ({
+                        ...current,
+                        [item.key]: !current[item.key as keyof typeof settings],
+                      }))
+                    }
+                    className="h-4 w-4 accent-indigo-600"
+                    aria-label={item.title}
+                  />
+                </label>
+              ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CircleHelp className="h-4 w-4 text-primary" />
+                <CardTitle>¿No recibes notificaciones?</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs leading-5 text-muted">
+                Revisa tu correo no deseado o verifica la configuración de tu
+                cuenta. Si el problema persiste, contacta al equipo de soporte.
+              </p>
+              <Button variant="outline" size="sm" className="mt-4 w-full">
+                <Mail className="h-3.5 w-3.5" />
+                Contactar soporte
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-      </section>
+      </div>
     </div>
   );
 };

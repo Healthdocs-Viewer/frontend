@@ -36,13 +36,6 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Resumen general</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Una vista rápida de tus estudios y casos médicos.
-        </p>
-      </div>
-
-      <div>
         <h1 className="text-2xl font-semibold">Perfil y seguridad</h1>
         <p className="mt-1 text-sm text-slate-500">
           Administra tu información básica, acceso y preferencias de seguridad.
@@ -52,7 +45,7 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(340px,1fr)]">
         <div className="min-w-0 space-y-5">
           <Card>
-            <CardContent className="p-5">
+            <CardContent className="p-card">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                   <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-400">
@@ -81,8 +74,8 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
 
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
                   <CardTitle>
                     <UserRound
                       className="mr-2 inline h-4 w-4 text-primary"
@@ -90,19 +83,23 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
                     />
                     Información personal
                   </CardTitle>
-                  <p className="mt-1 text-xs text-muted">
+                  <p className="mt-1 max-w-xl text-xs leading-5 text-muted">
                     Tu información básica se utiliza para identificarte y
                     personalizar tu experiencia.
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full shrink-0 sm:w-auto"
+                >
                   <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                   Actualizar información
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/50 px-4">
+              <div className="divide-y divide-slate-200/80 rounded-xl border border-slate-200/80 bg-slate-50/50 px-4 dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-800/50">
                 {[
                   ["Nombre completo", "María Fernanda Torres"],
                   ["Correo electrónico", "paciente@healthdocs.local"],
@@ -111,10 +108,12 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
                 ].map(([label, value]) => (
                   <div
                     key={label}
-                    className="grid gap-1 py-2.5 text-sm sm:grid-cols-[180px_1fr]"
+                    className="grid gap-1 py-3 text-sm sm:grid-cols-[180px_1fr] sm:gap-4"
                   >
                     <span className="text-muted">{label}</span>
-                    <span className="font-medium">{value}</span>
+                    <span className="break-words font-medium text-content">
+                      {value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -134,7 +133,7 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
                 Gestiona tus opciones de acceso y mantén tu cuenta protegida.
               </p>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
               {[
                 [
                   KeyRound,
@@ -157,24 +156,30 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
               ].map(([Icon, title, description, action]) => (
                 <div
                   key={title as string}
-                  className="flex items-center gap-3 rounded-lg border border-slate-100 p-3"
+                  className="flex flex-col items-stretch gap-3 rounded-xl border border-slate-200/80 bg-slate-50/40 p-3.5 sm:flex-row sm:items-center dark:border-slate-700 dark:bg-slate-800/40"
                 >
                   <Icon
-                    className="h-5 w-5 shrink-0 text-primary"
+                    className="h-5 w-5 shrink-0 text-primary dark:text-indigo-300"
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{title as string}</p>
-                    <p className="text-xs text-muted">
+                    <p className="text-sm font-medium text-content">
+                      {title as string}
+                    </p>
+                    <p className="text-xs leading-5 text-muted">
                       {description as string}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full shrink-0 sm:w-auto"
+                  >
                     {action as string}
                   </Button>
                 </div>
               ))}
-              <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3 text-xs text-indigo-700">
+              <div className="rounded-xl border border-indigo-200/80 bg-indigo-50 p-3 text-xs leading-5 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">
                 <strong>Próximamente: seguridad avanzada</strong>
                 <br />
                 Estamos trabajando en la integración con Amazon Cognito para
@@ -222,14 +227,18 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
               ].map(([Icon, title, location, date], index) => (
                 <div
                   key={title as string}
-                  className="flex items-center gap-3 rounded-lg bg-slate-50 p-3"
+                  className="flex items-center gap-3 rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5 transition-colors dark:border-slate-700 dark:bg-slate-800/60"
                 >
-                  <Icon className="h-5 w-5 text-muted" aria-hidden="true" />
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-muted shadow-sm dark:bg-slate-700 dark:text-slate-300">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{title as string}</p>
+                    <p className="truncate text-sm font-medium text-content">
+                      {title as string}
+                    </p>
                     <p className="text-xs text-muted">{location as string}</p>
                   </div>
-                  <span className="text-right text-xs text-muted">
+                  <span className="shrink-0 text-right text-xs text-muted">
                     {index === 0 ? (
                       <Badge variant="success">{date as string}</Badge>
                     ) : (
@@ -238,7 +247,7 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
                   </span>
                 </div>
               ))}
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="mt-1 w-full">
                 <LogOut className="h-4 w-4" aria-hidden="true" />
                 Cerrar todas las sesiones
               </Button>

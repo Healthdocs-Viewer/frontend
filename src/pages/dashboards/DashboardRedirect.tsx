@@ -7,13 +7,11 @@ import { StudentDashboardPage } from "./StudentDashboardPage";
 import { PatientDashboardPage } from "./PatientDashboardPage";
 
 export const DashboardRedirect: React.FC = () => {
-  const user = { role: "paciente" }; // Mock user for demonstration purposes
   // const { user } = useAuth();
 
-  // if (!user) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  // if (!user) return <Navigate to="/login" replace />;
 
+  const user = { role: "paciente" }; // Simulación de usuario para pruebas
   switch (user.role) {
     case "profesor":
       return <CoordinatorDashboardPage />;

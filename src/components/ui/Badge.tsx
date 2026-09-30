@@ -4,8 +4,8 @@ import { cn } from "./cn";
 type BadgeVariant = "default" | "neutral" | "info" | "success" | "warning" | "destructive";
 
 const variants: Record<BadgeVariant, string> = {
-  default: "bg-indigo-50 text-indigo-700",
-  neutral: "bg-slate-100 text-slate-700",
+  default: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300",
+  neutral: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   info: "bg-info/10 text-info",
   success: "bg-success/10 text-success",
   warning: "bg-warning/15 text-warning",
