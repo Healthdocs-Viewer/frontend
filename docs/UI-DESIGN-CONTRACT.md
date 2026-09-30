@@ -93,6 +93,37 @@ Los tokens están definidos en `src/index.css` y registrados en `tailwind.config
 
 Preferir clases semánticas como `bg-primary`, `text-muted`, `border-border` y `bg-success/10` en componentes reutilizables.
 
+### 6.1. Modo oscuro
+
+El modo oscuro es obligatorio para toda interfaz nueva. El proyecto utiliza Tailwind con `darkMode: "class"`; `ThemeProvider` agrega o elimina la clase `dark` en el elemento `<html>` y conserva la preferencia del usuario.
+
+- Toda superficie, texto, borde, icono, estado y control interactivo debe tener una apariencia definida para ambos temas.
+- No asumir que activar la clase `dark` transforma automáticamente los colores. Cada color fijo debe incluir una variante `dark:` o utilizar un token semántico.
+- Preferir tokens reutilizables como `bg-surface`, `text-content`, `text-muted` y `border-border` cuando el componente sea compartido.
+- Para estilos específicos de una pantalla, usar pares explícitos como:
+
+```tsx
+<div className="border border-slate-200 bg-white text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+```
+
+- Usar esta referencia como base:
+
+| Elemento | Claro | Oscuro |
+| --- | --- | --- |
+| Fondo general | `bg-slate-50` | `dark:bg-slate-950` |
+| Superficie/card | `bg-white` | `dark:bg-slate-900` |
+| Superficie secundaria | `bg-slate-50` | `dark:bg-slate-800` |
+| Borde | `border-slate-200` | `dark:border-slate-700` |
+| Texto principal | `text-slate-900` | `dark:text-slate-100` |
+| Texto secundario | `text-slate-500` | `dark:text-slate-400` |
+
+- Los estados semánticos deben conservar su significado sin usar fondos pastel demasiado brillantes. Preferir, por ejemplo, `dark:bg-emerald-950/60 dark:text-emerald-300` para éxito y equivalentes oscuros para información, advertencia y error.
+- Las tablas deben definir tema para encabezado, filas, separadores, hover y celdas; no basta con cambiar el fondo de la tabla.
+- Los iconos dentro de círculos o tarjetas deben definir también el fondo y el color del icono en modo oscuro.
+- Inputs, botones outline, badges, checkboxes, avisos y estados vacíos deben probarse explícitamente en ambos temas.
+- No usar `filter: invert()`, reglas globales con `!important` ni forzar colores desde CSS para simular el modo oscuro.
+- Antes de entregar una interfaz, revisar visualmente la pantalla completa con el botón de cambio de tema, no solo la superficie principal.
+
 ## 7. Componentes base
 
 Los componentes reutilizables viven en `src/components/ui/`:
@@ -167,6 +198,8 @@ Esto facilita reutilización, traducciones, filtros y cambios de UI.
 - [ ] Las acciones usan `Button` o `IconButton`.
 - [ ] Los estados usan `Badge`.
 - [ ] Los colores respetan los tokens semánticos.
+- [ ] La pantalla tiene variantes `dark:` o tokens para fondos, textos, bordes, iconos, controles y estados.
+- [ ] Se revisaron tablas, listas, inputs, botones, badges y estados en modo claro y oscuro.
 - [ ] Los botones y enlaces tienen comportamiento claro.
 - [ ] Los controles tienen estados de foco visibles.
 - [ ] Las tablas tienen encabezados accesibles.
@@ -198,13 +231,13 @@ Antes de introducir una nueva clase, variante o componente, comprobar si puede r
 ## 15. Navegación interna y rutas
 
 - Las rutas internas del dashboard deben utilizar navegación SPA.
-- Usar `history.pushState` para actualizar la URL sin recargar toda la aplicación.
-- Escuchar `popstate` para soportar correctamente los botones atrás y adelante del navegador.
+- Usar React Router (`Link`, `NavLink`, `Navigate` y rutas centralizadas) para actualizar la URL sin recargar toda la aplicación.
+- No implementar navegación manual con `history.pushState`, listeners de `popstate` o `window.location` dentro de páginas y componentes.
 - Centralizar las rutas dashboard en un único archivo o módulo.
-- Mantener `href` en los enlaces internos para conservar accesibilidad y permitir Ctrl/Cmd + click.
+- Usar `Link` o `NavLink` para enlaces internos; conservar `href` únicamente en enlaces externos o descargas.
 - Los enlaces deben navegar; los botones deben ejecutar acciones.
 - No usar `href="#"` ni recargas manuales para cambiar de sección.
-- El cambio de ruta debe reemplazar únicamente el contenido de `DashboardContent`; el layout compartido debe permanecer montado.
+- El cambio de ruta debe reemplazar únicamente el contenido renderizado por `Outlet`; el layout compartido debe permanecer montado.
 
 ## 16. Librería y componentes existentes
 
