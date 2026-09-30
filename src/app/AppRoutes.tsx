@@ -24,6 +24,8 @@ export const AppRoutes = () => {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardRedirect />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/crear-caso" element={<CreateCasePage />} />
+
           <Route path="/mis-casos" element={<CasesPage />} />
           <Route path="/mis-casos/nuevo" element={<CreateCasePage />} />
           <Route path="/mis-casos/:caseId" element={<CaseDetailPage />} />
