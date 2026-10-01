@@ -1,7 +1,7 @@
 export const dashboardRoutes = [
   "/",
   "/mis-casos",
-  "/resultados",
+  "/mis-resultados",
   "/notificaciones",
   "/configuracion",
 ] as const;

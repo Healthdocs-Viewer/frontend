@@ -76,7 +76,7 @@ const statusConfig: Record<
   Finalizado: { icon: CheckCircle2, variant: "neutral", action: "Ver caso" },
 };
 
-export const CasesPage: React.FC = () => {
+export const PersonalCasesPage: React.FC = () => {
   const [query, setQuery] = React.useState("");
   const [activeFilter, setActiveFilter] = React.useState("Todos");
   const [page, setPage] = React.useState(1);

@@ -18,7 +18,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       case "/mis-casos":
       case "/dashboard/mis-casos":
         return <DashboardCasesContent />;
-      case "/resultados":
+      case "/mis-resultados":
       case "/dashboard/resultados":
         return <DashboardResultsContent />;
       case "/notificaciones":

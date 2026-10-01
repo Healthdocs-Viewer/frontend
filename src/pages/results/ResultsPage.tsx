@@ -250,7 +250,7 @@ export const ResultsPage: React.FC = () => {
                   <Button
                     size="sm"
                     className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-                    onClick={() => navigate(`/resultados/${item.id}`)}
+                    onClick={() => navigate(`/mis-resultados/${item.id}`)}
                   >
                     <FileText className="h-4 w-4" />
                     Ver resultado

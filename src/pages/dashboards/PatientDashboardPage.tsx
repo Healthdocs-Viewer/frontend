@@ -203,7 +203,7 @@ export const PatientDashboardPage = () => {
   const pageTitle =
     path === "/mis-casos"
       ? "Mis casos"
-      : path === "/resultados" || path === "/dashboard/resultados"
+      : path === "/mis-resultados" || path === "/dashboard/resultados"
         ? "Resultados"
         : path === "/notificaciones"
           ? "Notificaciones"
@@ -255,7 +255,7 @@ export const PatientDashboardPage = () => {
               Nuevo caso
             </Link>
             <Link
-              to="/resultados"
+              to="/mis-resultados"
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-5 py-2.5 text-center text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"
             >
               <FileText className="h-4 w-4" />
@@ -522,7 +522,7 @@ export const PatientDashboardPage = () => {
               <h2 className="font-semibold">Resultados disponibles</h2>
             </div>
             <a
-              href="/resultados"
+              href="/mis-resultados"
               className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
             >
               Ver todos{" "}

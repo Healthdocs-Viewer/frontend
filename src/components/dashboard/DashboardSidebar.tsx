@@ -15,6 +15,7 @@ import {
   ClipboardList,
   GraduationCap,
   UserPlus,
+  UsersRound,
 } from "lucide-react";
 import { navigateDashboard } from "./dashboardNavigation";
 import type { UserRole } from "../../types/api";
@@ -62,14 +63,14 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const items = [
     ["Inicio", Home, "/"],
     ["Mis casos", BriefcaseBusiness, "/mis-casos"],
-    ["Resultados", FileText, "/resultados"],
+    ["Mis resultados", FileText, "/mis-resultados"],
     ["Notificaciones", Bell, "/notificaciones"],
   ] as const;
 
   const teachingItems = [
-    ["Casos disponibles", FolderSearch, "/docencia/casos"],
-    ["Asignaciones", UserPlus, "/docencia/asignaciones"],
-    ["Resultados por publicar", Send, "/docencia/resultados"],
+    ["Casos disponibles", FolderSearch, "/casos-academicos"],
+    ["Estudiantes", UsersRound, "/estudiantes"],
+    ["Resultados de docencia", Send, "/resultados"],
   ] as const;
 
   const studentItems = [
@@ -127,19 +128,20 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             )}
             <div className="space-y-1 border-l border-slate-200 pl-2">
               {teachingItems.map(([label, Icon, href]) => {
-                const active = activePath === href;
+                const active = href === "/casos-academicos"
+                  ? activePath.startsWith(href)
+                  : activePath === href;
                 return (
-                  <a
+                  <NavLink
                     key={label}
-                    href={href}
-                    onClick={(event) => handleNavigation(event, href)}
+                    to={href}
                     aria-current={active ? "page" : undefined}
                     title={collapsed ? label : undefined}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${active ? "bg-slate-100 font-medium text-slate-900" : "text-slate-600 hover:bg-slate-100"}`}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${active ? "bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"}`}
                   >
                     <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                     {!collapsed && label}
-                  </a>
+                  </NavLink>
                 );
               })}
             </div>
