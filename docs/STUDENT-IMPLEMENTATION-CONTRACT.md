@@ -1,20 +1,20 @@
-# Contrato de implementación — Área del estudiante
+# Contrato de implementación — Área del investigador
 
-Este documento define el alcance de implementación del área académica del estudiante. El estudiante conserva además el área personal del paciente, con sus casos propios, resultados y notificaciones.
+Este documento define el alcance de implementación del área académica del investigador. El investigador conserva además el área personal del paciente, con sus casos propios, resultados y notificaciones.
 
 ## 1. Estructura
 
-El dashboard del estudiante tendrá:
+El dashboard del investigador tendrá:
 
 - Área personal: `Inicio`, `Mis casos`, `Notificaciones` y `Perfil`.
-- Área académica: `Estudiante`.
+- Área académica: `Investigador`.
 
-Dentro de `Estudiante` habrá dos subpestañas:
+Dentro de `Investigador` habrá dos subpestañas:
 
 - `Casos asignados`.
 - `Resultados`.
 
-El estudiante no puede asignar, reasignar, aprobar ni habilitar casos o resultados para el paciente.
+El investigador no puede asignar, reasignar, aprobar ni habilitar casos o resultados para el paciente.
 
 ## 2. Casos asignados
 
@@ -33,12 +33,12 @@ El estudiante no puede asignar, reasignar, aprobar ni habilitar casos o resultad
 
 - Información básica del caso.
 - Archivos autorizados para descarga.
-- Observaciones del profesor.
+- Observaciones del coordinador.
 - Estado del procesamiento.
 - Sección `Resultados del caso`.
 - Botón `Añadir resultado`.
 
-El estudiante puede consultar y descargar los archivos asignados, procesarlos fuera de la plataforma y cargar uno o varios resultados relacionados con el mismo caso.
+El investigador puede consultar y descargar los archivos asignados, procesarlos fuera de la plataforma y cargar uno o varios resultados relacionados con el mismo caso.
 
 ## 3. Resultados
 
@@ -95,7 +95,7 @@ El panel valida campos obligatorios, tipo y tamaño del archivo, muestra el prog
 - Error al cargar, descargar o guardar.
 - Carga exitosa.
 
-Los mensajes deben explicar qué ocurrió y qué acción puede realizar el estudiante. No deben exponer información personal innecesaria del paciente.
+Los mensajes deben explicar qué ocurrió y qué acción puede realizar el investigador. No deben exponer información personal innecesaria del paciente.
 
 ## 5. Flujo principal
 
@@ -106,7 +106,7 @@ Procesar fuera de la plataforma
        ↓
 Añadir uno o varios resultados
        ↓
-Profesor revisa
+Coordinador revisa
        ├── Corrección requerida → Nueva versión → Nueva revisión
        └── Disponible para el paciente
 ```

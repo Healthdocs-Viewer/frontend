@@ -1,26 +1,26 @@
-# Especificación de pantallas — Estudiante
+# Especificación de pantallas — Investigador
 
-Este documento traduce el contrato del estudiante en una guía concreta para diseñar e implementar sus ventanas y componentes.
+Este documento traduce el contrato del investigador en una guía concreta para diseñar e implementar sus ventanas y componentes.
 
-## 1. Dashboard del estudiante
+## 1. Dashboard del investigador
 
 ### Navegación principal
 
-El estudiante conserva las funcionalidades del paciente y además tiene un área académica propia.
+El investigador conserva las funcionalidades del paciente y además tiene un área académica propia.
 
 - Inicio.
 - Mis casos.
-- Estudiante.
+- Investigador.
 - Notificaciones.
 - Perfil.
 
-La pestaña `Estudiante` contiene las funciones académicas. `Mis casos`, resultados personales y notificaciones pertenecen al área personal y no deben mezclarse con los casos asignados por un profesor.
+La pestaña `Investigador` contiene las funciones académicas. `Mis casos`, resultados personales y notificaciones pertenecen al área personal y no deben mezclarse con los casos asignados por un coordinador.
 
-## 2. Estudiante — Casos asignados
+## 2. Investigador — Casos asignados
 
 ### Objetivo
 
-Consultar los casos que fueron asignados al estudiante, descargar sus archivos autorizados y acceder a los resultados asociados.
+Consultar los casos que fueron asignados al investigador, descargar sus archivos autorizados y acceder a los resultados asociados.
 
 ### Elementos de la vista
 
@@ -39,7 +39,7 @@ Consultar los casos que fueron asignados al estudiante, descargar sus archivos a
 - Última actualización.
 - Acción `Ver detalle`.
 
-El estudiante solo ve casos asignados a su usuario. No aparecen acciones para asignar, reasignar o habilitar resultados.
+El investigador solo ve casos asignados a su usuario. No aparecen acciones para asignar, reasignar o habilitar resultados.
 
 ### Estados de la vista
 
@@ -70,7 +70,7 @@ Al seleccionar un caso se abre su detalle como página o panel.
 
 ### Seguimiento académico
 
-- Observaciones del profesor.
+- Observaciones del coordinador.
 - Estado del procesamiento.
 - Fecha de última asignación o actualización.
 
@@ -139,11 +139,11 @@ Debe mostrar:
 
 Solo pueden eliminarse resultados que todavía no estén disponibles para el paciente. El listado cambia únicamente después de confirmar el éxito de la eliminación.
 
-## 7. Estudiante — Resultados
+## 7. Investigador — Resultados
 
 ### Objetivo
 
-Consultar y gestionar todos los resultados que el estudiante ha cargado.
+Consultar y gestionar todos los resultados que el investigador ha cargado.
 
 ### Elementos de la vista
 
@@ -172,11 +172,11 @@ Consultar y gestionar todos los resultados que el estudiante ha cargado.
 - Cargar nueva versión cuando exista una solicitud de corrección.
 - Añadir otro resultado al caso relacionado.
 
-El estudiante no puede aprobar, habilitar ni publicar resultados para el paciente.
+El investigador no puede aprobar, habilitar ni publicar resultados para el paciente.
 
 ## 8. Versiones y correcciones
 
-Cuando el profesor solicita una corrección:
+Cuando el coordinador solicita una corrección:
 
 ```text
 Resultado original
@@ -185,7 +185,7 @@ Corrección requerida
       ↓
 Nueva versión
       ↓
-Nueva revisión del profesor
+Nueva revisión del coordinador
 ```
 
 La nueva versión conserva la relación con el mismo caso. El resultado anterior debe mantenerse como referencia y no sobrescribirse silenciosamente.
@@ -208,7 +208,7 @@ Los mensajes deben explicar qué ocurrió y cuál es la siguiente acción. No de
 ## 10. Flujo completo
 
 ```text
-Estudiante → Casos asignados → Seleccionar caso
+Investigador → Casos asignados → Seleccionar caso
                          ↓
               Descargar archivos
                          ↓
@@ -216,7 +216,7 @@ Estudiante → Casos asignados → Seleccionar caso
                          ↓
               Añadir uno o varios resultados
                          ↓
-                 Profesor revisa
+                 Coordinador revisa
                          ├── Corrección requerida → Nueva versión
                          └── Disponible para el paciente
 ```

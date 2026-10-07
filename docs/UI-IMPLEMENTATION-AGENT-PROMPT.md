@@ -32,35 +32,35 @@ No inventes flujos, permisos ni datos que contradigan esos documentos. Si la ima
 
 La interfaz implementada debe sentirse parte del producto existente. No reemplaces el sistema visual actual por un diseño genérico de shadcn/ui. Conserva la estructura, espaciado, tipografía, colores, radios, sombras, navegación y comportamiento que ya usa Healthdocs, ajustándolos a la imagen de referencia.
 
-### Interfaces del profesor
+### Interfaces del coordinador
 
 Implementa el área `Docencia` con estas subpestañas:
 
 - `Casos`.
-- `Estudiantes`.
+- `Investigadores`.
 - `Resultados`.
 
 Debe incluir:
 
 - Listado de casos con búsqueda y filtros.
-- Panel lateral derecho para asignar o reasignar estudiantes.
+- Panel lateral derecho para asignar o reasignar investigadores.
 - Detalle del caso con información, archivos y múltiples resultados.
-- Vista de estudiantes autorizados y sus casos.
+- Vista de investigadores autorizados y sus casos.
 - Vista de resultados con revisión, solicitud de corrección y habilitación para el paciente.
 - Confirmaciones para reasignar, solicitar corrección y habilitar resultados.
 
-El profesor puede asignar o reasignar casos, revisar resultados y habilitarlos según sus permisos. No asumas que todos los profesores poseen las mismas acciones.
+El coordinador puede asignar o reasignar casos, revisar resultados y habilitarlos según sus permisos. No asumas que todos los coordinadores poseen las mismas acciones.
 
-### Interfaces del estudiante
+### Interfaces del investigador
 
-Implementa el área `Estudiante` con estas subpestañas:
+Implementa el área `Investigador` con estas subpestañas:
 
 - `Casos asignados`.
 - `Resultados`.
 
 Debe incluir:
 
-- Listado únicamente de casos asignados al estudiante.
+- Listado únicamente de casos asignados al investigador.
 - Detalle del caso con archivos descargables, observaciones y resultados.
 - Panel lateral para añadir resultados.
 - Panel lateral para editar resultados.
@@ -68,7 +68,7 @@ Debe incluir:
 - Soporte para varios resultados por caso y nuevas versiones.
 - Vista de resultados con filtros por estado.
 
-El estudiante puede descargar archivos y cargar, editar o eliminar resultados antes de que estén disponibles para el paciente. No puede asignar, reasignar, aprobar, habilitar ni publicar resultados.
+El investigador puede descargar archivos y cargar, editar o eliminar resultados antes de que estén disponibles para el paciente. No puede asignar, reasignar, aprobar, habilitar ni publicar resultados.
 
 ### Estados y acciones
 
@@ -124,8 +124,8 @@ Los mensajes deben explicar qué ocurrió y cuál es la siguiente acción. No de
 - Respeta `DashboardLayout`, `DashboardSidebar`, `DashboardNavbar` y la estructura compartida existente.
 - Coloca componentes reutilizables en `src/components/ui/` o en la carpeta de dominio correspondiente.
 - Evita duplicar componentes, estilos o lógica.
-- Usa tipos explícitos para casos, estudiantes, resultados, estados y permisos.
-- Mantén separadas las vistas del profesor y del estudiante.
+- Usa tipos explícitos para casos, investigadores, resultados, estados y permisos.
+- Mantén separadas las vistas del coordinador y del investigador.
 - Si el backend todavía no existe para una interacción, usa datos mock tipados y deja una frontera clara para conectar el servicio después.
 
 ### Entrega esperada
@@ -146,7 +146,7 @@ No cambies contratos funcionales ni inventes permisos sin documentar primero la 
 ### Variables que debe completar quien use este prompt
 
 - Imagen de referencia: `[adjuntar imagen o indicar su ruta]`.
-- Perfil a implementar: `[profesor / estudiante / ambos]`.
+- Perfil a implementar: `[coordinador / investigador / ambos]`.
 - Ruta o página objetivo: `[indicar ruta]`.
 - Datos reales disponibles: `[sí / no]`.
 - ¿Debe conectarse al backend en esta iteración?: `[sí / no]`.

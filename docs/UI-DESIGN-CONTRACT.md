@@ -271,7 +271,7 @@ Antes de introducir una nueva clase, variante o componente, comprobar si puede r
 
 ## 18. Preparación para múltiples roles
 
-- El layout debe poder compartirse entre paciente, estudiante y profesor/coordinador.
+- El layout debe poder compartirse entre paciente, investigador y coordinador.
 - No duplicar `DashboardLayout` para cada rol.
 - El contenido y la configuración del sidebar pueden variar por rol, pero la estructura visual debe permanecer reutilizable.
 - Separar la configuración de navegación y permisos de la presentación visual.

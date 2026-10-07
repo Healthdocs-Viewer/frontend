@@ -1,12 +1,12 @@
-# Especificación de pantallas — Profesor
+# Especificación de pantallas — Coordinador
 
-Este documento traduce el contrato de Docencia en una guía concreta para diseñar e implementar cada ventana y componente del profesor.
+Este documento traduce el contrato de Docencia en una guía concreta para diseñar e implementar cada ventana y componente del coordinador.
 
-## 1. Dashboard del profesor
+## 1. Dashboard del coordinador
 
 ### Navegación principal
 
-El profesor conserva su área personal y tiene acceso a `Docencia`.
+El coordinador conserva su área personal y tiene acceso a `Docencia`.
 
 - Inicio.
 - Mis casos.
@@ -20,13 +20,13 @@ La pestaña `Docencia` contiene las funciones académicas. Las funciones de `Mis
 
 ### Objetivo
 
-Consultar casos académicos, identificar casos sin asignar y asignarlos o reasignarlos a estudiantes autorizados.
+Consultar casos académicos, identificar casos sin asignar y asignarlos o reasignarlos a investigadores autorizados.
 
 ### Elementos de la vista
 
 - Título `Casos de docencia`.
 - Descripción breve.
-- Buscador por identificador del caso o estudiante.
+- Buscador por identificador del caso o investigador.
 - Filtros: `Todos`, `Sin asignar`, `Asignado`, `En procesamiento`, `Resultado cargado`, `Corrección requerida` y `Disponible para el paciente`.
 - Tabla o lista de casos.
 
@@ -35,14 +35,14 @@ Consultar casos académicos, identificar casos sin asignar y asignarlos o reasig
 - Identificador del caso.
 - Fecha de recepción.
 - Estado.
-- Estudiante asignado.
+- Investigador asignado.
 - Última actualización.
 - Acciones.
 
 ### Acciones del listado
 
 - `Ver detalle`.
-- `Asignar estudiante` cuando no exista asignación.
+- `Asignar investigador` cuando no exista asignación.
 - `Cambiar asignación` cuando ya exista y el permiso lo permita.
 
 ### Estados de la vista
@@ -53,20 +53,20 @@ Consultar casos académicos, identificar casos sin asignar y asignarlos o reasig
 - Error al cargar.
 - Caso actualizado correctamente.
 
-## 3. Panel lateral — Asignar o cambiar estudiante
+## 3. Panel lateral — Asignar o cambiar investigador
 
 El panel aparece desde el lado derecho y mantiene visible la bandeja de casos.
 
 ### Contenido
 
-- Encabezado `Asignar estudiante` o `Cambiar asignación`.
+- Encabezado `Asignar investigador` o `Cambiar asignación`.
 - Botón para cerrar.
 - Identificador, fecha y estado del caso.
-- Estudiante actual, si existe.
+- Investigador actual, si existe.
 - Buscador por nombre, correo o identificador institucional.
-- Lista de estudiantes autorizados.
-- Cantidad de casos asignados por estudiante, si está disponible.
-- Selección de un estudiante.
+- Lista de investigadores autorizados.
+- Cantidad de casos asignados por investigador, si está disponible.
+- Selección de un investigador.
 - Botón `Asignar` o `Guardar cambio`.
 - Botón `Cancelar`.
 
@@ -92,10 +92,10 @@ No mostrar el nombre completo del paciente por defecto. Mostrar únicamente la i
 
 ### Bloque de gestión académica
 
-- Estudiante asignado.
+- Investigador asignado.
 - Fecha de asignación.
 - Estado del procesamiento.
-- Acción para asignar o cambiar estudiante, si corresponde.
+- Acción para asignar o cambiar investigador, si corresponde.
 
 ### Bloque de archivos
 
@@ -116,19 +116,19 @@ No mostrar el nombre completo del paciente por defecto. Mostrar únicamente la i
 - Estado individual.
 - Acciones según permisos.
 
-## 5. Docencia — Estudiantes
+## 5. Docencia — Investigadores
 
 ### Objetivo
 
-Consultar estudiantes autorizados y revisar o reasignar sus casos.
+Consultar investigadores autorizados y revisar o reasignar sus casos.
 
 ### Elementos de la vista
 
-- Título `Estudiantes`.
+- Título `Investigadores`.
 - Buscador por nombre, correo o identificador.
-- Lista o tabla de estudiantes.
+- Lista o tabla de investigadores.
 
-### Información por estudiante
+### Información por investigador
 
 - Nombre.
 - Identificador institucional.
@@ -139,22 +139,22 @@ Consultar estudiantes autorizados y revisar o reasignar sus casos.
 
 ### Acciones
 
-- Abrir los casos del estudiante.
+- Abrir los casos del investigador.
 - Abrir el detalle de un caso.
 - Reasignar un caso mediante el mismo panel lateral de la vista `Casos`.
 
-No incluir creación, edición, bloqueo ni eliminación de estudiantes en el MVP.
+No incluir creación, edición, bloqueo ni eliminación de investigadores en el MVP.
 
 ## 6. Docencia — Resultados
 
 ### Objetivo
 
-Revisar los resultados cargados por los estudiantes y habilitarlos para el paciente cuando corresponda.
+Revisar los resultados cargados por los investigadores y habilitarlos para el paciente cuando corresponda.
 
 ### Elementos de la vista
 
 - Título `Resultados de docencia`.
-- Buscador por identificador del caso, resultado o estudiante.
+- Buscador por identificador del caso, resultado o investigador.
 - Filtros: `Todos`, `Pendiente`, `Cargado`, `Corrección requerida` y `Disponible para el paciente`.
 - Lista o tabla de resultados.
 
@@ -162,7 +162,7 @@ Revisar los resultados cargados por los estudiantes y habilitarlos para el pacie
 
 - Identificador del caso.
 - Resultado.
-- Estudiante responsable.
+- Investigador responsable.
 - Fecha de carga.
 - Versión.
 - Estado.
@@ -216,9 +216,9 @@ Los mensajes deben explicar qué ocurrió y cuál es la siguiente acción. No se
 ## 8. Flujo completo de la interfaz
 
 ```text
-Docencia → Casos → Abrir caso → Asignar estudiante
+Docencia → Casos → Abrir caso → Asignar investigador
                          ↓
-              Estudiante procesa externamente
+              Investigador procesa externamente
                          ↓
 Docencia → Resultados → Revisar resultado
                          ├── Solicitar corrección
