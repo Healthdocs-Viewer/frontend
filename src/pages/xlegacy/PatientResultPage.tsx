@@ -41,7 +41,7 @@ export const PatientResultPage: React.FC<{ caseId: string }> = ({ caseId }) => {
 
   useEffect(() => { void loadResult(); }, [caseId, token]);
 
-  if (!user || user.role !== 'paciente') {
+  if (!user || user.role !== 'patient') {
     return <StatePanel state="forbidden" onRetry={loadResult} />;
   }
 

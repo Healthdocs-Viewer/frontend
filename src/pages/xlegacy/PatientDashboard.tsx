@@ -19,14 +19,6 @@ import { CaseSummary, FileSummary, PatientResult } from '../types/api';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
-const STUDY_TYPES = [
-  { value: 'RADIOGRAFIA_TORAX', label: 'Radiografia de torax' },
-  { value: 'RESONANCIA_CEREBRAL', label: 'Resonancia cerebral' },
-  { value: 'TOMOGRAFIA_ABDOMINAL', label: 'Tomografia abdominal' },
-  { value: 'ECOGRAFIA_GENERAL', label: 'Ecografia general' },
-  { value: 'OTRO_ESTUDIO', label: 'Otro estudio' },
-];
-
 const TERMS_VERSION = '1.0';
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -72,7 +64,7 @@ export const PatientDashboard: React.FC = () => {
   const [caseLoadError, setCaseLoadError] = useState<string | null>(null);
 
   const [wizardStep, setWizardStep] = useState<WizardStep>(1);
-  const [studyType, setStudyType] = useState(STUDY_TYPES[0].value);
+  const [studyName, setStudyName] = useState('');
   const [currentCase, setCurrentCase] = useState<CaseSummary | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [consentId, setConsentId] = useState<string | null>(null);
@@ -111,7 +103,7 @@ export const PatientDashboard: React.FC = () => {
 
   const resetWizard = () => {
     setWizardStep(1);
-    setStudyType(STUDY_TYPES[0].value);
+    setStudyName('');
     setCurrentCase(null);
     setTermsAccepted(false);
     setConsentId(null);
@@ -130,7 +122,7 @@ export const PatientDashboard: React.FC = () => {
     setIsBusy(true);
     setFlowError(null);
     try {
-      const created = await apiClient.patient.createCase({ studyType });
+      const created = await apiClient.patient.createCase({ studyName });
       setCurrentCase(created);
       setCases((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
       setSelectedCaseId(created.id);
@@ -279,7 +271,7 @@ export const PatientDashboard: React.FC = () => {
                       {item.status}
                     </span>
                   </div>
-              <p className="text-xs text-slate-500 mt-1 truncate">{item.studyType}</p>
+              <p className="text-xs text-slate-500 mt-1 truncate">{item.studyName}</p>
             <div className="flex items-center gap-1 text-xs text-slate-400 mt-2">
                     <Clock className="w-3 h-3" />
                     <span>{new Date(item.createdAt).toLocaleString()}</span>
@@ -326,20 +318,19 @@ export const PatientDashboard: React.FC = () => {
                       Crear caso
                     </h3>
                     <p className="text-xs text-slate-500 mt-1">
-                      Selecciona el tipo de estudio. No ingreses historia clinica ni texto medico libre en esta etapa.
+                      Escribe el nombre tal como aparece en la orden médica. No ingreses historia clínica.
                     </p>
                   </div>
                   <label className="block">
-                    <span className="block text-xs font-semibold text-slate-700 mb-1">Tipo de estudio</span>
-                    <select
-                      value={studyType}
-                      onChange={(event) => setStudyType(event.target.value)}
+                    <span className="block text-xs font-semibold text-slate-700 mb-1">Nombre del estudio</span>
+                    <input
+                      required
+                      maxLength={200}
+                      placeholder="Ej. Radiografía de tórax"
+                      value={studyName}
+                      onChange={(event) => setStudyName(event.target.value)}
                       className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      {STUDY_TYPES.map((item) => (
-                        <option key={item.value} value={item.value}>{item.label}</option>
-                      ))}
-                    </select>
+                    />
                   </label>
                   <button type="submit" disabled={isBusy} className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg disabled:opacity-50">
                     {isBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderPlus className="w-4 h-4" />}

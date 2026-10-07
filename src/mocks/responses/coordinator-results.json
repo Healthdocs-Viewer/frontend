@@ -1,0 +1,260 @@
+{
+  "items": [
+    {
+      "id": "d0000000-0000-4000-8000-000000000001",
+      "name": "Informe radiológico tórax",
+      "file": {
+        "id": "e0000000-0000-4000-8000-000000000001",
+        "originalFilename": "Informe-radiol-gico-t-rax.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 1258291,
+        "extension": "pdf"
+      },
+      "case": {
+        "id": "c0000000-0000-4000-8000-000000000001",
+        "referenceCode": "CAS-20260921-0042",
+        "studyName": "Radiografía de tórax"
+      },
+      "uploadedBy": {
+        "userId": "b0000000-0000-4000-8000-000000000001",
+        "studentCode": "EST-1187",
+        "fullName": "Ana Ruiz"
+      },
+      "uploadedAt": "2026-09-21T14:32:00Z",
+      "updatedAt": "2026-09-21T14:32:00Z",
+      "version": 1,
+      "status": "UPLOADED",
+      "correctionRequest": null,
+      "availableAt": null,
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "d0000000-0000-4000-8000-000000000002",
+      "name": "Segmentación pulmonar",
+      "file": {
+        "id": "e0000000-0000-4000-8000-000000000002",
+        "originalFilename": "Segmentaci-n-pulmonar.dcm",
+        "contentType": "application/dicom",
+        "sizeBytes": 8808038,
+        "extension": "dcm"
+      },
+      "case": {
+        "id": "c0000000-0000-4000-8000-000000000002",
+        "referenceCode": "CAS-20260920-0038",
+        "studyName": "Tomografía de tórax"
+      },
+      "uploadedBy": {
+        "userId": "b0000000-0000-4000-8000-000000000002",
+        "studentCode": "EST-1042",
+        "fullName": "Laura Gómez"
+      },
+      "uploadedAt": "2026-09-20T10:15:00Z",
+      "updatedAt": "2026-09-21T09:10:00Z",
+      "version": 2,
+      "status": "AVAILABLE",
+      "correctionRequest": null,
+      "availableAt": "2026-09-21T09:10:00Z",
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "d0000000-0000-4000-8000-000000000003",
+      "name": "Mediciones cardíacas",
+      "file": {
+        "id": "e0000000-0000-4000-8000-000000000003",
+        "originalFilename": "Mediciones-card-acas.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 863232,
+        "extension": "pdf"
+      },
+      "case": {
+        "id": "c0000000-0000-4000-8000-000000000003",
+        "referenceCode": "CAS-20260919-0031",
+        "studyName": "Ecocardiograma"
+      },
+      "uploadedBy": {
+        "userId": "b0000000-0000-4000-8000-000000000003",
+        "studentCode": "EST-1205",
+        "fullName": "Mateo Sánchez"
+      },
+      "uploadedAt": "2026-09-19T16:40:00Z",
+      "updatedAt": "2026-09-20T11:20:00Z",
+      "version": 1,
+      "status": "CORRECTION_REQUIRED",
+      "correctionRequest": null,
+      "availableAt": null,
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "d0000000-0000-4000-8000-000000000004",
+      "name": "Reconstrucción 3D",
+      "file": {
+        "id": "e0000000-0000-4000-8000-000000000004",
+        "originalFilename": "Reconstrucci-n-3D.zip",
+        "contentType": "application/zip",
+        "sizeBytes": 13212058,
+        "extension": "zip"
+      },
+      "case": {
+        "id": "c0000000-0000-4000-8000-000000000004",
+        "referenceCode": "CAS-20260918-0027",
+        "studyName": "Tomografía abdominal"
+      },
+      "uploadedBy": {
+        "userId": "b0000000-0000-4000-8000-000000000004",
+        "studentCode": "EST-0998",
+        "fullName": "Camila Vega"
+      },
+      "uploadedAt": "2026-09-18T12:08:00Z",
+      "updatedAt": "2026-09-18T12:08:00Z",
+      "version": 1,
+      "status": "UPLOADED",
+      "correctionRequest": null,
+      "availableAt": null,
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "d0000000-0000-4000-8000-000000000005",
+      "name": "Informe final",
+      "file": {
+        "id": "e0000000-0000-4000-8000-000000000005",
+        "originalFilename": "Informe-final.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 1153434,
+        "extension": "pdf"
+      },
+      "case": {
+        "id": "c0000000-0000-4000-8000-000000000005",
+        "referenceCode": "CAS-20260917-0021",
+        "studyName": "Resonancia cerebral"
+      },
+      "uploadedBy": {
+        "userId": "b0000000-0000-4000-8000-000000000005",
+        "studentCode": "EST-1076",
+        "fullName": "Daniel Ramírez"
+      },
+      "uploadedAt": "2026-09-17T17:22:00Z",
+      "updatedAt": "2026-09-17T17:22:00Z",
+      "version": 3,
+      "status": "AVAILABLE",
+      "correctionRequest": null,
+      "availableAt": "2026-09-17T17:22:00Z",
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "d0000000-0000-4000-8000-000000000006",
+      "name": "Máscaras de segmentación",
+      "file": {
+        "id": "e0000000-0000-4000-8000-000000000006",
+        "originalFilename": "M-scaras-de-segmentaci-n.zip",
+        "contentType": "application/zip",
+        "sizeBytes": 5033165,
+        "extension": "zip"
+      },
+      "case": {
+        "id": "c0000000-0000-4000-8000-000000000006",
+        "referenceCode": "CAS-20260916-0018",
+        "studyName": "Tomografía de rodilla"
+      },
+      "uploadedBy": {
+        "userId": "b0000000-0000-4000-8000-000000000006",
+        "studentCode": "EST-1033",
+        "fullName": "Paula Torres"
+      },
+      "uploadedAt": "2026-09-16T13:05:00Z",
+      "updatedAt": "2026-09-16T16:40:00Z",
+      "version": 1,
+      "status": "CORRECTION_REQUIRED",
+      "correctionRequest": null,
+      "availableAt": null,
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "d0000000-0000-4000-8000-000000000007",
+      "name": "Informe preliminar",
+      "file": {
+        "id": "e0000000-0000-4000-8000-000000000007",
+        "originalFilename": "Informe-preliminar.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 580608,
+        "extension": "pdf"
+      },
+      "case": {
+        "id": "c0000000-0000-4000-8000-000000000007",
+        "referenceCode": "CAS-20260915-0013",
+        "studyName": "Radiografía de mano"
+      },
+      "uploadedBy": {
+        "userId": "b0000000-0000-4000-8000-000000000007",
+        "studentCode": "EST-1101",
+        "fullName": "Sofía Herrera"
+      },
+      "uploadedAt": "2026-09-15T09:26:00Z",
+      "updatedAt": "2026-09-15T12:15:00Z",
+      "version": 1,
+      "status": "AVAILABLE",
+      "correctionRequest": null,
+      "availableAt": "2026-09-15T12:15:00Z",
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "d0000000-0000-4000-8000-000000000008",
+      "name": "Análisis de imágenes",
+      "file": {
+        "id": "e0000000-0000-4000-8000-000000000008",
+        "originalFilename": "An-lisis-de-im-genes.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 2411725,
+        "extension": "pdf"
+      },
+      "case": {
+        "id": "c0000000-0000-4000-8000-000000000008",
+        "referenceCode": "CAS-20260914-0009",
+        "studyName": "Tomografía de cráneo"
+      },
+      "uploadedBy": {
+        "userId": "b0000000-0000-4000-8000-000000000008",
+        "studentCode": "EST-1250",
+        "fullName": "Juan Castillo"
+      },
+      "uploadedAt": "2026-09-14T12:40:00Z",
+      "updatedAt": "2026-09-14T12:40:00Z",
+      "version": 2,
+      "status": "UPLOADED",
+      "correctionRequest": null,
+      "availableAt": null,
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "available": 3,
+    "deleted": 0,
+    "correctionRequired": 2,
+    "uploaded": 3
+  },
+  "page": 0,
+  "size": 8,
+  "totalItems": 8,
+  "totalPages": 1.0,
+  "appliedFilters": {
+    "q": "",
+    "status": null,
+    "sort": "uploadedAt,desc"
+  }
+}

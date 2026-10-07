@@ -16,12 +16,16 @@ import {
   UserProfile,
 } from "../types/api";
 import { mockBackendService, MockHttpError } from "./mockApi";
+import { authService, clearStoredToken, getStoredToken, setStoredToken } from "./authService";
 
-const TOKEN_KEY = "healthdocs_jwt_token";
 const MOCK_MODE_KEY = "healthdocs_use_mock_api";
+
+// Compatibility exports for existing local-auth tests and development helpers.
+export { clearStoredToken, getStoredToken, setStoredToken };
 
 // Configurable: Usar mock por defecto en desarrollo local si el backend no está disponible
 export function isMockMode(): boolean {
+  if (authService.usesManagedProvider) return false;
   const saved = localStorage.getItem(MOCK_MODE_KEY);
   return saved === null ? true : saved === "true";
 }
@@ -31,18 +35,6 @@ export function setMockMode(enabled: boolean): void {
   window.dispatchEvent(
     new CustomEvent("healthdocs_mock_mode_changed", { detail: enabled }),
   );
-}
-
-export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function setStoredToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-export function clearStoredToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
 }
 
 /**
@@ -77,7 +69,7 @@ const API_BASE_URL = "/api/v1";
  * - Propaga errores de red sin tratarlos como errores de autenticación.
  */
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getStoredToken();
+  const token = await authService.getToken();
   const headers = new Headers(options.headers || {});
 
   headers.set("Accept", "application/json");
@@ -152,22 +144,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export const apiClient = {
   auth: {
     async login(req: LoginRequest): Promise<LoginResponse> {
-      if (isMockMode()) {
-        try {
-          return await mockBackendService.login(req);
-        } catch (err: any) {
-          if (err instanceof MockHttpError) {
-            // 401 en login: credenciales incorrectas — no hay sesión que cerrar
-            // 403 en login: cuenta sin rol habilitado — emitir forbidden pero NO unauthorized
-            if (err.status === 403) notifyForbidden(err.message);
-          }
-          throw err;
-        }
-      }
-      return request<LoginResponse>("/auth/login", {
-        method: "POST",
-        body: JSON.stringify(req),
-      });
+      const session = await authService.login(req);
+      return { token: session.accessToken, user: await apiClient.auth.getMe() };
     },
 
     /**
@@ -178,7 +156,7 @@ export const apiClient = {
      * - TypeError (red)  → mantener sesión, no se sabe si el token es válido
      */
     async getMe(): Promise<UserProfile> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) {
         // No hay token: caso normal, no hay sesión. No emitir evento.
         const err: ErrorResponse = {
@@ -196,11 +174,20 @@ export const apiClient = {
 
       return request<UserProfile>("/me");
     },
+
+    /**
+     * POST /auth/register — provision the Healthdocs account for the current
+     * verified identity. The Bearer token is attached by request(); no user ID,
+     * email, or role is accepted from the browser as registration authority.
+     */
+    async register(): Promise<UserProfile> {
+      return request<UserProfile>("/auth/register", { method: "POST" });
+    },
   },
 
   patient: {
     async createCase(req: CreateCaseRequest): Promise<CaseSummary> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -225,7 +212,7 @@ export const apiClient = {
       caseId: string,
       req: AcceptConsentRequest,
     ): Promise<ConsentRecord> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -247,7 +234,7 @@ export const apiClient = {
     },
 
     async listMyCases(): Promise<CaseSummary[]> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -269,7 +256,7 @@ export const apiClient = {
       caseId: string,
       req: CreateUploadIntentRequest,
     ): Promise<UploadIntent> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -291,7 +278,7 @@ export const apiClient = {
     },
 
     async getPatientResult(caseId: string): Promise<PatientResult> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
 
       if (!token) throw new Error("No autenticado");
       if (isMockMode()) {
@@ -311,7 +298,7 @@ export const apiClient = {
 
   files: {
     async completeUpload(fileId: string): Promise<CompleteUploadResponse> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -334,7 +321,7 @@ export const apiClient = {
 
   internal: {
     async listAssignedCases(): Promise<InternalCaseSummary[]> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -356,7 +343,7 @@ export const apiClient = {
       caseId: string,
       fileId: string,
     ): Promise<DownloadIntent> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -386,7 +373,7 @@ export const apiClient = {
       resultId: string,
     ): Promise<DownloadIntent> {
       if (isMockMode()) {
-        const token = getStoredToken();
+        const token = await authService.getToken();
         if (!token) throw new Error("No autenticado");
         return mockBackendService.createResultDownload(token, caseId, resultId);
       }
@@ -398,7 +385,7 @@ export const apiClient = {
 
     async deleteResult(caseId: string, resultId: string): Promise<void> {
       if (isMockMode()) {
-        const token = getStoredToken();
+        const token = await authService.getToken();
         if (!token) throw new Error("No autenticado");
         return mockBackendService.deleteResult(token, caseId, resultId);
       }
@@ -411,7 +398,7 @@ export const apiClient = {
       caseId: string,
       req: CreateUploadIntentRequest,
     ): Promise<UploadIntent> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -439,7 +426,7 @@ export const apiClient = {
 
   operations: {
     async listPendingCases(): Promise<InternalCaseSummary[]> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -458,7 +445,7 @@ export const apiClient = {
     },
 
     async assignCase(caseId: string, userId: string): Promise<void> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
@@ -480,7 +467,7 @@ export const apiClient = {
     },
 
     async makeResultAvailable(resultId: string): Promise<void> {
-      const token = getStoredToken();
+      const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {

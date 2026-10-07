@@ -1,0 +1,28 @@
+{
+  "summary": { "totalStudents": 18, "authorizedStudents": 16, "totalAssignedCases": 42 },
+  "items": [
+    { "userId": "a0000001-0000-4000-8000-000000000001", "studentCode": "EST-1187", "fullName": "Ana Ruiz", "email": "aruiz@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 5 },
+    { "userId": "a0000002-0000-4000-8000-000000000002", "studentCode": "EST-1042", "fullName": "Laura Gómez", "email": "lgomez@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 3 },
+    { "userId": "a0000003-0000-4000-8000-000000000003", "studentCode": "EST-1205", "fullName": "Mateo Sánchez", "email": "msanchez@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 4 },
+    { "userId": "a0000004-0000-4000-8000-000000000004", "studentCode": "EST-0998", "fullName": "Camila Vega", "email": "cvega@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 2 },
+    { "userId": "a0000005-0000-4000-8000-000000000005", "studentCode": "EST-1076", "fullName": "Daniel Ramírez", "email": "dramirez@unal.edu.co", "authorizationStatus": "PENDING", "assignedCaseCount": 0 },
+    { "userId": "a0000006-0000-4000-8000-000000000006", "studentCode": "EST-1033", "fullName": "Paula Torres", "email": "ptorres@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 6 },
+    { "userId": "a0000007-0000-4000-8000-000000000007", "studentCode": "EST-1101", "fullName": "Sofía Herrera", "email": "sherrera@unal.edu.co", "authorizationStatus": "RESTRICTED", "assignedCaseCount": 1 },
+    { "userId": "a0000008-0000-4000-8000-000000000008", "studentCode": "EST-1250", "fullName": "Juan Castillo", "email": "jcastillo@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 4 },
+    { "userId": "a0000009-0000-4000-8000-000000000009", "studentCode": "EST-1190", "fullName": "Mariana León", "email": "mleon@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 2 },
+    { "userId": "a0000010-0000-4000-8000-000000000010", "studentCode": "EST-1021", "fullName": "Felipe Moreno", "email": "fmoreno@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 1 },
+    { "userId": "a0000011-0000-4000-8000-000000000011", "studentCode": "EST-1114", "fullName": "Valentina Díaz", "email": "vdiaz@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 3 },
+    { "userId": "a0000012-0000-4000-8000-000000000012", "studentCode": "EST-1128", "fullName": "Andrés Castro", "email": "acastro@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 2 },
+    { "userId": "a0000013-0000-4000-8000-000000000013", "studentCode": "EST-1136", "fullName": "Sara Rojas", "email": "srojas@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 2 },
+    { "userId": "a0000014-0000-4000-8000-000000000014", "studentCode": "EST-1144", "fullName": "Nicolás Molina", "email": "nmolina@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 1 },
+    { "userId": "a0000015-0000-4000-8000-000000000015", "studentCode": "EST-1152", "fullName": "Elena Navarro", "email": "enavarro@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 2 },
+    { "userId": "a0000016-0000-4000-8000-000000000016", "studentCode": "EST-1160", "fullName": "Tomás Salazar", "email": "tsalazar@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 1 },
+    { "userId": "a0000017-0000-4000-8000-000000000017", "studentCode": "EST-1168", "fullName": "Isabel Méndez", "email": "imendez@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 2 },
+    { "userId": "a0000018-0000-4000-8000-000000000018", "studentCode": "EST-1176", "fullName": "Óscar Pardo", "email": "opardo@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 1 }
+  ],
+  "page": 0,
+  "size": 100,
+  "totalItems": 18,
+  "totalPages": 1,
+  "appliedFilters": { "q": "", "status": null, "sort": "name,asc" }
+}

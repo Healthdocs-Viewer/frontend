@@ -2,7 +2,7 @@
  * Tipos basados estrictamente en el contrato OpenAPI 0.3.0 (openapi.yaml)
  */
 
-export type UserRole = 'paciente' | 'estudiante' | 'profesor';
+export type UserRole = 'patient' | 'researcher' | 'coordinator' | 'admin';
 
 export interface UserProfile {
   id: string;
@@ -32,12 +32,12 @@ export interface CaseSummary {
   id: string;
   referenceCode: string;
   status: CaseStatus;
-  studyType: string;
+  studyName: string;
   createdAt: string;
 }
 
 export interface CreateCaseRequest {
-  studyType: string;
+  studyName: string;
 }
 
 export interface AcceptConsentRequest {

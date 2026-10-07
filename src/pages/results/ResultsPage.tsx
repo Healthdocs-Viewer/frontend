@@ -1,7 +1,6 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
-  Bell,
   Calendar,
   CheckCircle2,
   Download,
@@ -9,7 +8,6 @@ import {
   FileText,
   Info,
   Search,
-  Stethoscope,
   TriangleAlert,
 } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
@@ -21,49 +19,26 @@ import {
   CardTitle,
 } from "../../components/ui/Card";
 import { cn } from "../../components/ui/cn";
+import { getPatientResults } from "../../services/patientResults";
+import type { PatientResultPublicationType, PatientResultsResponse } from "../../types/patientResults";
 
-type Result = {
-  id: string;
-  study: string;
-  clinic: string;
-  date: string;
-  images: number;
-  status: "Nuevo" | "Consultado";
+const publicationTypeLabels: Record<PatientResultPublicationType, string> = {
+  INITIAL: "Publicado",
+  CORRECTED: "Corregido",
 };
-const results: Result[] = [
-  {
-    id: "CAS-20260910-0005",
-    study: "TAC de abdomen",
-    clinic: "Clínica Healthdocs",
-    date: "10/9/2026, 11:32",
-    images: 12,
-    status: "Nuevo",
-  },
-  {
-    id: "CAS-20260921-0002",
-    study: "Radiografía de tórax",
-    clinic: "Clínica Healthdocs",
-    date: "20/9/2026, 20:45",
-    images: 3,
-    status: "Consultado",
-  },
-  {
-    id: "CAS-20260918-0001",
-    study: "Resonancia de rodilla",
-    clinic: "Centro Médico del Sur",
-    date: "18/9/2026, 16:20",
-    images: 28,
-    status: "Consultado",
-  },
-  {
-    id: "CAS-20260905-0003",
-    study: "Ecografía abdominal",
-    clinic: "Clínica Healthdocs",
-    date: "5/9/2026, 09:15",
-    images: 15,
-    status: "Consultado",
-  },
-];
+
+const formatContentType = (contentType: string) =>
+  contentType === "application/pdf" ? "PDF" : contentType;
+
+const formatDate = (value: string) =>
+  new Intl.DateTimeFormat("es-CO", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(value));
 
 const SummaryItem = ({
   icon: Icon,
@@ -104,21 +79,35 @@ const SummaryItem = ({
 );
 
 export const ResultsPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [filter, setFilter] = React.useState<
-    "Todos" | "Nuevos" | "Consultados"
-  >("Todos");
+  const [downloadFeedback, setDownloadFeedback] = React.useState("");
+  const [filter, setFilter] = React.useState<"Todos" | "Publicados" | "Corregidos">("Todos");
   const [query, setQuery] = React.useState("");
-  const visible = results.filter((item) => {
-    const matchesFilter =
-      filter === "Todos" || item.status === filter.slice(0, -1);
-    return (
-      matchesFilter &&
-      `${item.id} ${item.study} ${item.clinic}`
-        .toLowerCase()
-        .includes(query.toLowerCase())
-    );
-  });
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
+  const [ascending, setAscending] = React.useState(false);
+  const [response, setResponse] = React.useState<PatientResultsResponse | null>(null);
+  const [error, setError] = React.useState("");
+  const filterByPublicationType: Record<Exclude<typeof filter, "Todos">, PatientResultPublicationType> = {
+    Publicados: "INITIAL",
+    Corregidos: "CORRECTED",
+  };
+  React.useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedQuery(query), 300);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
+  React.useEffect(() => {
+    let active = true;
+    setResponse(null);
+    setError("");
+    if (query !== debouncedQuery) return () => { active = false; };
+    getPatientResults({ q: debouncedQuery, sort: ascending ? "availableAt,asc" : "availableAt,desc" })
+      .then((data) => { if (active) setResponse(data); })
+      .catch(() => { if (active) setError("No se pudieron cargar los resultados."); });
+    return () => { active = false; };
+  }, [query, debouncedQuery, ascending]);
+  const items = response?.items ?? [];
+  const visible = filter === "Todos"
+    ? items
+    : items.filter((item) => item.publicationType === filterByPublicationType[filter]);
 
   return (
     <div className="space-y-5">
@@ -131,8 +120,8 @@ export const ResultsPage: React.FC = () => {
             Resultados
           </h1>
           <p className="mt-2 text-sm leading-5 text-slate-500 dark:text-slate-400">
-            Consulta, visualiza y descarga los resultados disponibles de tus
-            estudios médicos.
+            Consulta los archivos publicados para tus estudios y accede al caso
+            para descargarlos.
           </p>
         </div>
         <div className="pointer-events-none absolute right-12 top-5 hidden items-center gap-3 text-indigo-100 dark:text-indigo-950 md:flex">
@@ -148,13 +137,13 @@ export const ResultsPage: React.FC = () => {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por estudio, tipo de examen o ID de caso..."
+              placeholder="Buscar por caso, estudio o nombre de archivo..."
               aria-label="Buscar resultados"
               className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-950"
             />
           </label>
           <div className="flex flex-wrap gap-2">
-            {(["Todos", "Nuevos", "Consultados"] as const).map((item) => (
+            {(["Todos", "Publicados", "Corregidos"] as const).map((item) => (
               <Button
                 key={item}
                 size="sm"
@@ -168,100 +157,83 @@ export const ResultsPage: React.FC = () => {
                 {item}{" "}
                 <span className="ml-1 text-xs opacity-70">
                   {item === "Todos"
-                    ? results.length
-                    : results.filter((r) => r.status === item.slice(0, -1))
-                        .length}
+                    ? response?.totalItems ?? 0
+                    : items.filter((r) => r.publicationType === filterByPublicationType[item]).length}
                 </span>
               </Button>
             ))}
           </div>
-          <Button variant="outline" className="justify-start lg:w-44">
+          <Button variant="outline" onClick={() => setAscending((value) => !value)} className="justify-start lg:w-44">
             <Calendar className="h-4 w-4" />
-            Ordenar por fecha
+            {ascending ? "Más antiguos" : "Más recientes"}
           </Button>
         </CardContent>
       </Card>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-5 w-5 text-indigo-600" />
               Resultados disponibles ({visible.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {visible.map((item) => (
-              <article
-                key={item.id}
-                className={cn(
-                  "grid gap-4 rounded-xl border p-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_156px] sm:items-center",
-                  item.status === "Nuevo"
-                    ? "border-emerald-200 bg-emerald-50/40 dark:border-emerald-800 dark:bg-emerald-950/40"
-                    : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900",
-                )}
-              >
-                <div className="flex min-w-0 items-center gap-4">
-                  <span
-                    className={cn(
-                      "grid h-14 w-14 shrink-0 place-items-center rounded-xl",
-                      item.status === "Nuevo"
-                        ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-950/60 dark:text-emerald-300"
-                        : "bg-blue-50 text-blue-500 dark:bg-blue-950/60 dark:text-blue-300",
-                    )}
-                  >
-                    <Stethoscope className="h-7 w-7" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
-                      {item.id}
-                    </p>
-                    <h3 className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
-                      {item.study}
-                    </h3>
-                    <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                      {item.clinic}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-2 text-xs text-slate-500 dark:text-slate-400">
-                  <p className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {item.date}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Informe médico · <FileImage className="h-4 w-4" />
-                    {item.images} imágenes
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Badge
-                    variant="neutral"
-                    className={cn(
-                      "w-fit border-0",
-                      item.status === "Nuevo"
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/70 dark:text-emerald-200"
-                        : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-                    )}
-                  >
-                    {item.status}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-                    onClick={() => navigate(`/mis-resultados/${item.id}`)}
-                  >
-                    <FileText className="h-4 w-4" />
-                    Ver resultado
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Download className="h-4 w-4" />
-                    Descargar
-                  </Button>
-                </div>
-              </article>
-            ))}
+          <CardContent className="pt-0">
+            <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+              <table className="w-full min-w-[1120px] text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  <tr>
+                    <th scope="col" className="whitespace-nowrap px-3 py-3">Identificador del caso</th>
+                    <th scope="col" className="whitespace-nowrap px-3 py-3">Estudio</th>
+                    <th scope="col" className="whitespace-nowrap px-3 py-3">Nombre del archivo</th>
+                    <th scope="col" className="whitespace-nowrap px-3 py-3">Tipo</th>
+                    <th scope="col" className="whitespace-nowrap px-3 py-3">Fecha disponible</th>
+                    <th scope="col" className="whitespace-nowrap px-3 py-3">Tipo de publicación</th>
+                    <th scope="col" className="whitespace-nowrap px-3 py-3">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((item) => (
+                    <tr key={item.resultId} className="border-t border-slate-100 text-slate-700 transition-colors hover:bg-slate-50/70 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800/60">
+                      <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-900 dark:text-slate-100">{item.caseReferenceCode}</td>
+                      <td className="px-3 py-3">
+                        <span className="whitespace-nowrap font-medium">{item.studyName}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-700 dark:text-slate-200">{item.fileName}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-slate-500 dark:text-slate-400">{formatContentType(item.contentType)}</td>
+                      <td className="whitespace-nowrap px-3 py-3 text-slate-500 dark:text-slate-400">{formatDate(item.availableAt)}</td>
+                      <td className="px-3 py-3">
+                        <Badge variant="neutral" className={cn(
+                          "whitespace-nowrap border-0",
+                          item.publicationType === "INITIAL"
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/70 dark:text-emerald-200"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/70 dark:text-amber-200",
+                        )}>{publicationTypeLabels[item.publicationType]}</Badge>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="whitespace-nowrap"
+                            onClick={() => setDownloadFeedback(`No hay un archivo descargable asociado a ${item.fileName} en estos datos de demostración.`)}
+                          >
+                            <Download className="h-4 w-4" aria-hidden="true" />Descargar
+                          </Button>
+                          <Link to={`/mis_casos/${item.caseReferenceCode}`} className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-indigo-300 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-indigo-300">
+                            <FileText className="h-4 w-4" aria-hidden="true" />Ver caso
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {response && visible.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">No hay resultados que coincidan con la búsqueda y los filtros seleccionados.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            {!response && !error && <p role="status" className="mt-3 text-sm text-slate-500">Cargando resultados…</p>}
+            {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+            {downloadFeedback && <p role="status" className="mt-3 rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary-strong">{downloadFeedback}</p>}
           </CardContent>
         </Card>
 
@@ -276,22 +248,15 @@ export const ResultsPage: React.FC = () => {
             <CardContent className="space-y-2">
               <SummaryItem
                 icon={FileText}
-                value="3"
-                label="Resultados disponibles"
-                detail="Listos para consultar"
+                value={String(response?.summary.availableCaseCount ?? 0)}
+                label="Casos con resultados"
+                detail="Con archivos disponibles"
                 tone="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300"
               />
               <SummaryItem
-                icon={Bell}
-                value="1"
-                label="Resultado nuevo"
-                detail="Sin consultar"
-                tone="bg-rose-50 text-rose-500 dark:bg-rose-950/60 dark:text-rose-300"
-              />
-              <SummaryItem
                 icon={Calendar}
-                value="10/9/2026, 11:32"
-                label="Última actualización"
+                value={response?.summary.latestPublishedAt ? formatDate(response.summary.latestPublishedAt) : "—"}
+                label="Última publicación"
                 tone="bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300"
               />
             </CardContent>
@@ -306,13 +271,11 @@ export const ResultsPage: React.FC = () => {
             <CardContent className="space-y-4 text-xs leading-5 text-slate-500 dark:text-slate-400">
               <p className="flex gap-3">
                 <FileText className="h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" />
-                Los resultados incluyen el informe médico y las imágenes de tu
-                estudio.
+                Cada caso muestra su archivo de resultado vigente.
               </p>
               <p className="flex gap-3">
                 <Download className="h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" />
-                Puedes visualizar y descargar los resultados disponibles en
-                cualquier momento.
+                Puedes descargar los resultados disponibles desde el caso.
               </p>
               <p className="flex gap-3">
                 <TriangleAlert className="h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" />

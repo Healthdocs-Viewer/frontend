@@ -1,0 +1,20 @@
+{
+  "items": [
+    { "id": "c0000001-0000-4000-8000-000000000001", "referenceCode": "CAS-20260921-0042", "studyName": "Radiografía de tórax", "status": "ENABLED_FOR_PROCESSING", "receivedAt": "2026-09-21T14:32:00Z", "isAssigned": true },
+    { "id": "c0000002-0000-4000-8000-000000000002", "referenceCode": "CAS-20260919-0031", "studyName": "Tomografía de abdomen", "status": "ENABLED_FOR_PROCESSING", "receivedAt": "2026-09-19T09:48:00Z", "isAssigned": true },
+    { "id": "c0000003-0000-4000-8000-000000000003", "referenceCode": "CAS-20260915-0013", "studyName": "Resonancia de rodilla", "status": "RESULT_UPLOADED", "receivedAt": "2026-09-15T09:26:00Z", "isAssigned": true },
+    { "id": "c0000004-0000-4000-8000-000000000004", "referenceCode": "CAS-20260910-0027", "studyName": "Radiografía de columna", "status": "RESULT_UPLOADED", "receivedAt": "2026-09-10T11:20:00Z", "isAssigned": true },
+    { "id": "c0000005-0000-4000-8000-000000000005", "referenceCode": "CAS-20260905-0018", "studyName": "Ecografía abdominal", "status": "RESULT_AVAILABLE", "receivedAt": "2026-09-05T16:14:00Z", "isAssigned": true },
+    { "id": "c0000006-0000-4000-8000-000000000006", "referenceCode": "CAS-20260904-0016", "studyName": "Mamografía bilateral", "status": "ENABLED_FOR_PROCESSING", "receivedAt": "2026-09-04T10:10:00Z", "isAssigned": false },
+    { "id": "c0000007-0000-4000-8000-000000000007", "referenceCode": "CAS-20260903-0015", "studyName": "TAC de tórax", "status": "ENABLED_FOR_PROCESSING", "receivedAt": "2026-09-03T12:40:00Z", "isAssigned": false },
+    { "id": "c0000008-0000-4000-8000-000000000008", "referenceCode": "CAS-20260902-0014", "studyName": "Radiografía de mano", "status": "RESULT_UPLOADED", "receivedAt": "2026-09-02T08:35:00Z", "isAssigned": false },
+    { "id": "c0000009-0000-4000-8000-000000000009", "referenceCode": "CAS-20260830-0012", "studyName": "Resonancia lumbar", "status": "RESULT_AVAILABLE", "receivedAt": "2026-08-30T15:08:00Z", "isAssigned": false },
+    { "id": "c0000010-0000-4000-8000-000000000010", "referenceCode": "CAS-20260828-0011", "studyName": "Ecografía renal", "status": "ENABLED_FOR_PROCESSING", "receivedAt": "2026-08-28T09:15:00Z", "isAssigned": false },
+    { "id": "550e8400-e29b-41d4-a716-446655440102", "referenceCode": "CAS-20260920-0038", "studyName": "Resonancia de rodilla", "status": "RESULT_UPLOADED", "receivedAt": "2026-09-20T10:15:00Z", "isAssigned": false }
+  ],
+  "page": 0,
+  "size": 100,
+  "totalItems": 11,
+  "totalPages": 1,
+  "appliedFilters": { "q": "", "sort": "receivedAt,desc" }
+}

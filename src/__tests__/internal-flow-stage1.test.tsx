@@ -14,7 +14,7 @@ const mockCases: InternalCaseSummary[] = [
     id: 'c1000000-0000-0000-0000-000000000001',
     referenceCode: 'CAS-20260910-0001',
     status: 'ENABLED_FOR_PROCESSING',
-    studyType: 'RADIOGRAFIA_TORAX',
+    studyName: 'Radiografía de tórax',
     createdAt: '2026-09-10T14:30:00Z',
     files: [
       {
@@ -30,7 +30,7 @@ const mockCases: InternalCaseSummary[] = [
     id: 'c2000000-0000-0000-0000-000000000002',
     referenceCode: 'CAS-20260914-0001',
     status: 'RESULT_UPLOADED',
-    studyType: 'RESONANCIA_CEREBRAL',
+    studyName: 'Resonancia cerebral',
     createdAt: '2026-09-14T11:15:00Z',
     files: [
       {

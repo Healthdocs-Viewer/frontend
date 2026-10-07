@@ -27,7 +27,7 @@ export const TEST_USERS = [
     user: {
       id: 'b0000001-0000-0000-0000-000000000001',
       email: 'paciente@healthdocs.local',
-      role: 'paciente' as const,
+      role: 'patient' as const,
       enabled: true,
     },
   },
@@ -37,7 +37,7 @@ export const TEST_USERS = [
     user: {
       id: '00000000-0000-0000-0000-000000000002',
       email: 'estudiante@healthdocs.local',
-      role: 'estudiante' as const,
+      role: 'researcher' as const,
       enabled: true,
     },
   },
@@ -47,7 +47,7 @@ export const TEST_USERS = [
     user: {
       id: 'b0000003-0000-0000-0000-000000000003',
       email: 'profesor@healthdocs.local',
-      role: 'profesor' as const,
+      role: 'coordinator' as const,
       enabled: true,
     },
   },
@@ -59,13 +59,13 @@ export const TEST_USERS = [
  */
 export const QUICK_LOGIN_CREDENTIALS: Array<{
   label: string;
-  role: 'paciente' | 'estudiante' | 'profesor';
+  role: 'patient' | 'researcher' | 'coordinator' | 'admin';
   email: string;
   password: string;
 }> = [
-  { label: 'Paciente', role: 'paciente', email: 'paciente@healthdocs.local', password: 'paciente123' },
-  { label: 'Estudiante', role: 'estudiante', email: 'estudiante@healthdocs.local', password: 'estudiante123' },
-  { label: 'Profesor', role: 'profesor', email: 'profesor@healthdocs.local', password: 'profesor123' },
+  { label: 'Paciente', role: 'patient', email: 'paciente@healthdocs.local', password: 'paciente123' },
+  { label: 'Investigador', role: 'researcher', email: 'estudiante@healthdocs.local', password: 'estudiante123' },
+  { label: 'Coordinador', role: 'coordinator', email: 'profesor@healthdocs.local', password: 'profesor123' },
 ];
 
 interface MockDatabase {
@@ -76,7 +76,7 @@ interface MockDatabase {
     patientId: string;
     status: CaseSummary['status'];
     referenceCode: string;
-    studyType: string;
+    studyName: string;
     createdAt: string;
     assignedUserIds: string[];
     files: FileSummary[];
@@ -110,7 +110,7 @@ function getInitialDatabase(): MockDatabase {
         patientId: 'b0000001-0000-0000-0000-000000000001',
         status: 'RESULT_AVAILABLE',
         referenceCode: 'CAS-20260910-0001',
-        studyType: 'RADIOGRAFIA_TORAX',
+        studyName: 'Radiografía de tórax',
         createdAt: '2026-09-10T14:30:00Z',
         assignedUserIds: [
           '00000000-0000-0000-0000-000000000002',
@@ -144,7 +144,7 @@ function getInitialDatabase(): MockDatabase {
         patientId: 'b0000001-0000-0000-0000-000000000001',
         status: 'ENABLED_FOR_PROCESSING',
         referenceCode: 'CAS-20260914-0001',
-        studyType: 'RESONANCIA_CEREBRAL',
+        studyName: 'Resonancia cerebral',
         createdAt: '2026-09-14T11:15:00Z',
         assignedUserIds: [
           '00000000-0000-0000-0000-000000000002',
@@ -299,7 +299,7 @@ export const mockBackendService = {
   async createCase(token: string, request: CreateCaseRequest): Promise<CaseSummary> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'paciente') {
+    if (parsed.role !== 'patient') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol paciente puede crear casos');
     }
 
@@ -310,9 +310,9 @@ export const mockBackendService = {
       patientId: parsed.sub,
       status: 'CREATED' as const,
       referenceCode: `CAS-${today}-${String(db.cases.length + 1).padStart(4, '0')}`,
-      studyType: request.studyType,
+      studyName: request.studyName,
       createdAt: new Date().toISOString(),
-      assignedUserIds: ['b0000003-0000-0000-0000-000000000003'], // Profesor preasignado en demo
+      assignedUserIds: ['b0000003-0000-0000-0000-000000000003'], // Coordinador preasignado en demo
       files: [],
     };
 
@@ -323,7 +323,7 @@ export const mockBackendService = {
       id: newCase.id,
       referenceCode: newCase.referenceCode,
       status: newCase.status,
-      studyType: newCase.studyType,
+      studyName: newCase.studyName,
       createdAt: newCase.createdAt,
     };
   },
@@ -335,7 +335,7 @@ export const mockBackendService = {
   ): Promise<ConsentRecord> {
     await new Promise((r) => setTimeout(r, 180));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'paciente') {
+    if (parsed.role !== 'patient') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Solo paciente propietario puede aceptar términos');
     }
 
@@ -359,7 +359,7 @@ export const mockBackendService = {
   async listMyCases(token: string): Promise<CaseSummary[]> {
     await new Promise((r) => setTimeout(r, 150));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'paciente') {
+    if (parsed.role !== 'patient') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol paciente puede consultar sus casos');
     }
 
@@ -370,7 +370,7 @@ export const mockBackendService = {
         id: c.id,
         referenceCode: c.referenceCode,
         status: c.status,
-        studyType: c.studyType,
+        studyName: c.studyName,
         createdAt: c.createdAt,
       }));
   },
@@ -382,7 +382,7 @@ export const mockBackendService = {
   ): Promise<{ file: FileSummary; uploadUrl: string; expiresAt: string }> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'paciente') {
+    if (parsed.role !== 'patient') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Solo paciente propietario puede solicitar carga');
     }
 
@@ -487,7 +487,7 @@ export const mockBackendService = {
   async getPatientResult(token: string, caseId: string): Promise<PatientResult> {
     await new Promise((r) => setTimeout(r, 150));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'paciente') {
+    if (parsed.role !== 'patient') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Solo paciente puede consultar el resultado');
     }
 
@@ -512,7 +512,7 @@ export const mockBackendService = {
   async listAssignedCases(token: string): Promise<InternalCaseSummary[]> {
     await new Promise((r) => setTimeout(r, 150));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'estudiante' && parsed.role !== 'profesor') {
+    if (parsed.role !== 'researcher' && parsed.role !== 'coordinator') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Solo usuarios internos autorizados');
     }
 
@@ -528,7 +528,7 @@ export const mockBackendService = {
         id: c.id,
         referenceCode: c.referenceCode,
         status: c.status,
-        studyType: c.studyType,
+        studyName: c.studyName,
         createdAt: c.createdAt,
         files: c.files,
         result: c.result
@@ -551,13 +551,13 @@ export const mockBackendService = {
   ): Promise<DownloadIntent> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'estudiante' && parsed.role !== 'profesor') {
+    if (parsed.role !== 'researcher' && parsed.role !== 'coordinator') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Permisos insuficientes');
     }
 
     const db = loadDb();
     const c = db.cases.find((item) => item.id === caseId);
-    const canReviewPending = parsed.role === 'profesor' && c?.status === 'FILES_RECEIVED';
+    const canReviewPending = parsed.role === 'coordinator' && c?.status === 'FILES_RECEIVED';
     if (!c || (!c.assignedUserIds.includes(parsed.sub) && !canReviewPending)) {
       throw new MockHttpError(403, 'FORBIDDEN', 'Caso no habilitado para este usuario');
     }
@@ -580,7 +580,7 @@ export const mockBackendService = {
   ): Promise<DownloadIntent> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'estudiante' && parsed.role !== 'profesor') {
+    if (parsed.role !== 'researcher' && parsed.role !== 'coordinator') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Permisos insuficientes');
     }
 
@@ -604,7 +604,7 @@ export const mockBackendService = {
   async deleteResult(token: string, caseId: string, resultId: string): Promise<void> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'estudiante' && parsed.role !== 'profesor') {
+    if (parsed.role !== 'researcher' && parsed.role !== 'coordinator') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Permisos insuficientes');
     }
 
@@ -633,7 +633,7 @@ export const mockBackendService = {
   ): Promise<{ file: FileSummary; uploadUrl: string; expiresAt: string }> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'estudiante' && parsed.role !== 'profesor') {
+    if (parsed.role !== 'researcher' && parsed.role !== 'coordinator') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Permisos insuficientes');
     }
 
@@ -669,8 +669,8 @@ export const mockBackendService = {
   async listPendingCases(token: string): Promise<InternalCaseSummary[]> {
     await new Promise((r) => setTimeout(r, 150));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'profesor') {
-      throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol profesor puede consultar casos pendientes');
+    if (parsed.role !== 'coordinator') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol coordinador puede consultar casos pendientes');
     }
 
     const db = loadDb();
@@ -684,7 +684,7 @@ export const mockBackendService = {
         id: c.id,
         referenceCode: c.referenceCode,
         status: c.status,
-        studyType: c.studyType,
+        studyName: c.studyName,
         createdAt: c.createdAt,
         files: c.files,
       }));
@@ -693,14 +693,14 @@ export const mockBackendService = {
   async assignCase(token: string, caseId: string, userId: string): Promise<void> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'profesor') {
-      throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol profesor puede habilitar casos');
+    if (parsed.role !== 'coordinator') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol coordinador puede habilitar casos');
     }
 
     const db = loadDb();
     const c = db.cases.find((item) => item.id === caseId);
     if (!c || !c.assignedUserIds.includes(parsed.sub)) {
-      throw new MockHttpError(403, 'FORBIDDEN', 'Profesor no habilitado para este caso');
+      throw new MockHttpError(403, 'FORBIDDEN', 'Coordinador no habilitado para este caso');
     }
 
     if (!c.assignedUserIds.includes(userId)) {
@@ -716,8 +716,8 @@ export const mockBackendService = {
   async makeResultAvailable(token: string, resultId: string): Promise<void> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'profesor') {
-      throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol profesor puede publicar resultados');
+    if (parsed.role !== 'coordinator') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol coordinador puede publicar resultados');
     }
 
     const db = loadDb();
@@ -730,7 +730,7 @@ export const mockBackendService = {
     }
 
     if (!foundCase || !foundCase.assignedUserIds.includes(parsed.sub)) {
-      throw new MockHttpError(403, 'FORBIDDEN', 'Profesor no habilitado para este caso de resultado');
+      throw new MockHttpError(403, 'FORBIDDEN', 'Coordinador no habilitado para este caso de resultado');
     }
 
     foundCase.result!.isAvailable = true;

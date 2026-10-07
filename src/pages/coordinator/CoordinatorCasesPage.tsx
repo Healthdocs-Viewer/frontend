@@ -1,8 +1,7 @@
 import React from "react";
 import {
   ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CheckCircle2, CircleDot,
-  FileText, MoreVertical, Search, UserRoundPlus, UsersRound, RefreshCw,
-  Clock3, AlertTriangle,
+  FileText, MoreVertical, Search, UserRoundPlus, Clock3,
 } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
@@ -11,73 +10,82 @@ import { IconButton } from "../../components/ui/IconButton";
 import { cn } from "../../components/ui/cn";
 import { StudentAccessDrawer } from "../../components/cases/StudentAccessDrawer";
 import { Link } from "react-router-dom";
+import { getAcademicCases } from "../../services/academicCases";
+import { getAcademicStudents, getStudentAssignmentsForCase, saveStudentAssignmentsForCase } from "../../services/academicStudents";
+import type { AcademicCaseItem, AcademicCaseStatus } from "../../types/academicCases";
+import type { AcademicStudent } from "../../types/academicStudents";
 
-type AcademicStatus =
-  | "Sin asignar"
-  | "Asignado"
-  | "En procesamiento"
-  | "Resultado cargado"
-  | "Corrección requerida"
-  | "Disponible para el paciente";
+type AcademicStatusFilter = "Todos" | AcademicCaseStatus;
 
-type AcademicCase = {
-  id: string;
-  receivedAt: string;
-  status: AcademicStatus;
-  student: string;
-  updatedAt: string;
+const statusLabels: Record<AcademicCaseStatus, string> = {
+  ENABLED_FOR_PROCESSING: "En procesamiento",
+  RESULT_UPLOADED: "Resultado cargado",
+  RESULT_AVAILABLE: "Disponible para el paciente",
 };
 
-const cases: AcademicCase[] = [
-  { id: "CAS-20260921-0042", receivedAt: "21/9/2026, 14:32", status: "Sin asignar", student: "Sin asignación", updatedAt: "21/9/2026, 14:32" },
-  { id: "CAS-20260920-0038", receivedAt: "20/9/2026, 10:15", status: "Asignado", student: "EST-1042 · L. Gómez", updatedAt: "20/9/2026, 16:20" },
-  { id: "CAS-20260919-0031", receivedAt: "19/9/2026, 09:48", status: "En procesamiento", student: "EST-1187 · A. Ruiz", updatedAt: "20/9/2026, 11:03" },
-  { id: "CAS-20260918-0027", receivedAt: "18/9/2026, 16:12", status: "Resultado cargado", student: "EST-1033 · P. Torres", updatedAt: "19/9/2026, 08:45" },
-  { id: "CAS-20260917-0021", receivedAt: "17/9/2026, 11:20", status: "Corrección requerida", student: "EST-1205 · M. Sánchez", updatedAt: "18/9/2026, 17:30" },
-  { id: "CAS-20260916-0018", receivedAt: "16/9/2026, 13:05", status: "Disponible para el paciente", student: "EST-0998 · C. Vega", updatedAt: "17/9/2026, 09:12" },
-  { id: "CAS-20260915-0013", receivedAt: "15/9/2026, 09:26", status: "Asignado", student: "EST-1076 · D. Ramírez", updatedAt: "16/9/2026, 14:08" },
-  { id: "CAS-20260914-0009", receivedAt: "14/9/2026, 12:40", status: "Sin asignar", student: "Sin asignación", updatedAt: "14/9/2026, 12:40" },
-];
-
-const statusConfig: Record<AcademicStatus, { variant: "neutral" | "default" | "info" | "success" | "warning"; icon: typeof CircleDot }> = {
-  "Sin asignar": { variant: "neutral", icon: CircleDot },
-  Asignado: { variant: "default", icon: UsersRound },
-  "En procesamiento": { variant: "info", icon: Clock3 },
-  "Resultado cargado": { variant: "success", icon: CheckCircle2 },
-  "Corrección requerida": { variant: "warning", icon: AlertTriangle },
-  "Disponible para el paciente": { variant: "success", icon: FileText },
+const statusConfig: Record<AcademicCaseStatus, { variant: "info" | "success"; icon: typeof CircleDot }> = {
+  ENABLED_FOR_PROCESSING: { variant: "info", icon: Clock3 },
+  RESULT_UPLOADED: { variant: "success", icon: CheckCircle2 },
+  RESULT_AVAILABLE: { variant: "success", icon: FileText },
 };
 
-const filters: AcademicStatus[] = [
-  "Sin asignar", "Asignado", "En procesamiento", "Resultado cargado",
-  "Corrección requerida", "Disponible para el paciente",
+const filters: AcademicCaseStatus[] = [
+  "ENABLED_FOR_PROCESSING",
+  "RESULT_UPLOADED",
+  "RESULT_AVAILABLE",
 ];
 
-const defaultAccessIds = ["EST-1033", "EST-1042", "EST-0998", "EST-1076"];
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(value));
+}
 
-export const AcademicCasesPage: React.FC = () => {
+export const CoordinatorCasesPage: React.FC = () => {
   const [query, setQuery] = React.useState("");
-  const [activeFilter, setActiveFilter] = React.useState<AcademicStatus | "Todos">("Todos");
+  const [activeFilter, setActiveFilter] = React.useState<AcademicStatusFilter>("Todos");
   const [page, setPage] = React.useState(1);
   const [sortAscending, setSortAscending] = React.useState(false);
   const [feedback, setFeedback] = React.useState("");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [activeCase, setActiveCase] = React.useState<AcademicCase>(cases[0]);
-  const [accessByCase, setAccessByCase] = React.useState<Record<string, string[]>>({
-    "CAS-20260918-0027": defaultAccessIds,
-  });
+  const [activeCase, setActiveCase] = React.useState<AcademicCaseItem | null>(null);
+  const [accessByCase, setAccessByCase] = React.useState<Record<string, string[]>>({});
+  const [students, setStudents] = React.useState<AcademicStudent[]>([]);
+  const [cases, setCases] = React.useState<AcademicCaseItem[] | null>(null);
+  const [error, setError] = React.useState("");
   const pageSize = 8;
-  const counts = React.useMemo(() => Object.fromEntries(
-    ["Todos", ...filters].map((status) => [status, status === "Todos" ? cases.length : cases.filter((item) => item.status === status).length]),
-  ) as Record<string, number>, []);
-  const filteredCases = cases.filter((item) =>
+  React.useEffect(() => {
+    let active = true;
+    Promise.all([getAcademicCases(), getAcademicStudents()])
+      .then(async ([items, studentResponse]) => {
+        if (!active) return;
+        setCases(items);
+        setStudents(studentResponse.items);
+        const assignmentResponses = await Promise.all(items.map((item) => getStudentAssignmentsForCase(item.id)));
+        if (active) setAccessByCase(Object.fromEntries(assignmentResponses.map((assignment) => [assignment.caseId, assignment.studentIds])));
+      })
+      .catch(() => { if (active) setError("No se pudieron cargar los casos académicos."); });
+    return () => { active = false; };
+  }, []);
+  const allCases = cases ?? [];
+  const normalizedQuery = query.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
+  const counts = Object.fromEntries([
+    ["Todos", allCases.length],
+    ...filters.map((status) => [status, allCases.filter((item) => item.status === status).length]),
+  ]) as Record<string, number>;
+  const filteredCases = allCases.filter((item) =>
     (activeFilter === "Todos" || item.status === activeFilter) &&
-    `${item.id} ${item.student}`.toLowerCase().includes(query.toLowerCase()),
-  ).sort((a, b) => sortAscending ? a.receivedAt.localeCompare(b.receivedAt) : b.receivedAt.localeCompare(a.receivedAt));
+    `${item.referenceCode} ${item.studyName}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es").includes(normalizedQuery),
+  ).sort((a, b) => sortAscending ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt));
   const pageCount = Math.max(1, Math.ceil(filteredCases.length / pageSize));
   const visibleCases = filteredCases.slice((page - 1) * pageSize, page * pageSize);
-  const updateFilter = (filter: AcademicStatus | "Todos") => { setActiveFilter(filter); setPage(1); };
-  const openAccessDrawer = (item: AcademicCase) => {
+  const updateFilter = (filter: AcademicStatusFilter) => { setActiveFilter(filter); setPage(1); };
+  const openAccessDrawer = (item: AcademicCaseItem) => {
     setActiveCase(item);
     setDrawerOpen(true);
   };
@@ -90,7 +98,7 @@ export const AcademicCasesPage: React.FC = () => {
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight text-content">Casos Académicos</h1>
             <p className="mt-1 max-w-2xl text-sm leading-5 text-muted">
-              Asigna estudiantes a los casos habilitados y realiza el seguimiento del estado académico de cada caso, desde el análisis hasta la disponibilidad del resultado.
+              Asigna investigadores a los casos habilitados y realiza el seguimiento del procesamiento hasta la disponibilidad del resultado.
             </p>
           </div>
         </CardContent>
@@ -104,8 +112,8 @@ export const AcademicCasesPage: React.FC = () => {
               <input
                 value={query}
                 onChange={(event) => { setQuery(event.target.value); setPage(1); }}
-                placeholder="Buscar por identificador del caso o estudiante asignado"
-                aria-label="Buscar por identificador del caso o estudiante asignado"
+                placeholder="Buscar por código o nombre del estudio"
+                aria-label="Buscar por código o nombre del estudio"
                 className="h-9 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-content outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-primary/30"
               />
             </label>
@@ -123,13 +131,12 @@ export const AcademicCasesPage: React.FC = () => {
                   className={cn(
                     "shrink-0 rounded-full",
                     activeFilter === filter && "border-primary/30 bg-primary/10 text-primary-strong",
-                    filter === "En procesamiento" && "border-info/20 bg-info/10 text-info",
-                    filter === "Resultado cargado" && "border-success/20 bg-success/10 text-success",
-                    filter === "Corrección requerida" && "border-warning/20 bg-warning/10 text-warning",
-                    filter === "Disponible para el paciente" && "border-success/20 bg-success/10 text-success",
+                    filter === "ENABLED_FOR_PROCESSING" && "border-info/20 bg-info/10 text-info",
+                    filter === "RESULT_UPLOADED" && "border-success/20 bg-success/10 text-success",
+                    filter === "RESULT_AVAILABLE" && "border-success/20 bg-success/10 text-success",
                   )}
                 >
-                  {filter} ({counts[filter]})
+                  {statusLabels[filter]} ({counts[filter]})
                 </Button>
               ))}
             </div>
@@ -146,12 +153,8 @@ export const AcademicCasesPage: React.FC = () => {
                     </button>
                   </th>
                   <th scope="col" className="whitespace-nowrap px-3 py-3">Estado</th>
-                  <th scope="col" className="whitespace-nowrap px-3 py-3">Estudiante asignado</th>
-                  <th scope="col" className="whitespace-nowrap px-3 py-3">
-                    <button type="button" onClick={() => setSortAscending((value) => !value)} className="inline-flex items-center gap-1 hover:text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                      Última actualización <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                  </th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-3">Investigador asignado</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-3">Última actualización</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-3">Acciones</th>
                 </tr>
               </thead>
@@ -161,22 +164,22 @@ export const AcademicCasesPage: React.FC = () => {
                   const StatusIcon = config.icon;
                   return (
                     <tr key={item.id} className="border-t border-slate-100 text-content transition-colors hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/60">
-                      <td className="whitespace-nowrap px-3 py-2.5 font-medium">{item.id}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{item.receivedAt}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 font-medium">{item.referenceCode}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{formatDate(item.createdAt)}</td>
                       <td className="px-3 py-2.5">
                         <Badge variant={config.variant} className="whitespace-nowrap gap-1.5 px-3 py-1.5">
-                          <StatusIcon className="h-4 w-4" aria-hidden="true" />{item.status}
+                          <StatusIcon className="h-4 w-4" aria-hidden="true" />{statusLabels[item.status]}
                         </Badge>
                       </td>
-                      <td className={cn("whitespace-nowrap px-3 py-2.5", item.student === "Sin asignación" ? "text-muted" : "text-muted")}>{item.student}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{item.updatedAt}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{accessByCase[item.id]?.map((userId) => students.find((student) => student.userId === userId)?.studentCode ?? userId).join(", ") || "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">—</td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2">
                           <Button size="sm" variant="outline" onClick={() => openAccessDrawer(item)} className="whitespace-nowrap">
-                            {item.status === "Sin asignar" ? <UserRoundPlus className="h-4 w-4" aria-hidden="true" /> : <RefreshCw className="h-4 w-4" aria-hidden="true" />}
+                            <UserRoundPlus className="h-4 w-4" aria-hidden="true" />
                             Gestionar acceso
                           </Button>
-                          <Link to={`/casos-academicos/${item.id}`} className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-muted transition-colors hover:border-primary/30 hover:text-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2">
+                          <Link to={`/casos_academicos/${item.referenceCode}`} className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-muted transition-colors hover:border-primary/30 hover:text-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2">
                             <FileText className="h-4 w-4" aria-hidden="true" />Ver detalle
                           </Link>
                           <IconButton icon={MoreVertical} label={`Más acciones para ${item.id}`} variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setFeedback(`Más acciones · ${item.id}`)} />
@@ -192,6 +195,8 @@ export const AcademicCasesPage: React.FC = () => {
             </table>
           </div>
 
+          {!cases && !error && <p role="status" className="mt-3 text-sm text-muted">Cargando casos académicos…</p>}
+          {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
           {feedback && <p role="status" className="mt-3 rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary-strong">{feedback}</p>}
           <div className="flex flex-col gap-3 pt-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
             <span>Mostrando {visibleCases.length} de {filteredCases.length} casos</span>
@@ -208,12 +213,14 @@ export const AcademicCasesPage: React.FC = () => {
       <StudentAccessDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
-        caseId={activeCase.id}
-        caseStatus={activeCase.status}
-        initialSelectedIds={accessByCase[activeCase.id] ?? (activeCase.student === "Sin asignación" ? [] : [activeCase.student.split(" · ")[0]])}
-        onSave={(selectedIds) => {
-          setAccessByCase((current) => ({ ...current, [activeCase.id]: selectedIds }));
-          setFeedback(`Acceso de estudiantes actualizado para ${activeCase.id}.`);
+        caseId={activeCase?.referenceCode ?? ""}
+        caseStatus={activeCase ? statusLabels[activeCase.status] : ""}
+        caseUuid={activeCase?.id ?? ""}
+        onSave={async (selectedIds, expectedVersion) => {
+          if (!activeCase) return;
+          const assignment = await saveStudentAssignmentsForCase(activeCase.id, { studentIds: selectedIds, expectedVersion });
+          setAccessByCase((current) => ({ ...current, [activeCase.id]: assignment.studentIds }));
+          setFeedback(`Acceso de investigadores actualizado para ${activeCase.referenceCode}.`);
         }}
       />
     </div>

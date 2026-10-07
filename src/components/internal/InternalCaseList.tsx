@@ -147,7 +147,7 @@ export const InternalCaseList: React.FC<InternalCaseListProps> = ({
                 </div>
 
                 <div className="mt-1.5 text-[11px] text-slate-600 font-medium truncate">
-                  {c.studyType ? c.studyType.replace(/_/g, ' ') : 'Estudio clínico'}
+                  {c.studyName || 'Estudio clínico'}
                 </div>
 
                 <div className="mt-1 text-[10px] font-mono text-slate-400 truncate" title={c.id}>

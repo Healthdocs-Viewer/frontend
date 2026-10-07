@@ -7,11 +7,11 @@ export const Navbar: React.FC = () => {
 
   const getRoleBadge = (role?: string) => {
     switch (role) {
-      case 'paciente':
+      case 'patient':
         return 'bg-emerald-100 text-emerald-800 border-emerald-300';
-      case 'estudiante':
+      case 'researcher':
         return 'bg-sky-100 text-sky-800 border-sky-300';
-      case 'profesor':
+      case 'coordinator':
         return 'bg-purple-100 text-purple-800 border-purple-300';
       default:
         return 'bg-slate-100 text-slate-800 border-slate-300';

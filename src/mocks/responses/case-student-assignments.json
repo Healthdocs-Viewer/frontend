@@ -1,0 +1,35 @@
+{
+  "caseId": "550e8400-e29b-41d4-a716-446655440101",
+  "assignmentVersion": 1,
+  "students": [
+    {
+      "userId": "a0000006-0000-4000-8000-000000000006",
+      "studentCode": "EST-1033",
+      "fullName": "Paula Torres",
+      "email": "ptorres@unal.edu.co",
+      "authorizationStatus": "AUTHORIZED",
+      "assignedCaseCount": 6
+    },
+    {
+      "userId": "a0000002-0000-4000-8000-000000000002",
+      "studentCode": "EST-1042",
+      "fullName": "Laura Gómez",
+      "email": "lgomez@unal.edu.co",
+      "authorizationStatus": "AUTHORIZED",
+      "assignedCaseCount": 3
+    },
+    {
+      "userId": "a0000001-0000-4000-8000-000000000001",
+      "studentCode": "EST-1187",
+      "fullName": "Ana Ruiz",
+      "email": "aruiz@unal.edu.co",
+      "authorizationStatus": "AUTHORIZED",
+      "assignedCaseCount": 5
+    }
+  ],
+  "studentIds": [
+    "a0000006-0000-4000-8000-000000000006",
+    "a0000002-0000-4000-8000-000000000002",
+    "a0000001-0000-4000-8000-000000000001"
+  ]
+}

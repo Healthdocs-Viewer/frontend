@@ -126,10 +126,10 @@ export const InternalCaseDetail: React.FC<InternalCaseDetailProps> = ({
           <div className="p-2.5 rounded-lg bg-white/80 border border-slate-200/80">
             <span className="text-[10px] text-slate-400 font-semibold uppercase flex items-center gap-1">
               <Layers className="w-3 h-3 text-slate-400" />
-              Tipo de Estudio
+              Nombre del estudio
             </span>
             <p className="font-semibold text-slate-800 mt-0.5">
-              {selectedCase.studyType ? selectedCase.studyType.replace(/_/g, ' ') : 'No especificado'}
+              {selectedCase.studyName || 'No especificado'}
             </p>
           </div>
 

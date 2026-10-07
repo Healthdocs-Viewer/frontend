@@ -138,7 +138,7 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
                 [
                   KeyRound,
                   "Contraseña",
-                  "Última actualización: 15 sep. 2026, 10:24",
+                  "Última actualización: 15/9/2026, 10:24",
                   "Cambiar contraseña",
                 ],
                 [
@@ -216,13 +216,13 @@ export const SettingsPage: React.FC<{ embedded?: boolean }> = ({
                   Smartphone,
                   "iPhone · Safari",
                   "Bogotá, Colombia · IP 181.48.12.203",
-                  "19 sep. 2026, 16:42",
+                  "19/9/2026, 16:42",
                 ],
                 [
                   Monitor,
                   "macOS · Chrome",
                   "Medellín, Colombia · IP 190.145.33.87",
-                  "12 sep. 2026, 09:15",
+                  "12/9/2026, 09:15",
                 ],
               ].map(([Icon, title, location, date], index) => (
                 <div

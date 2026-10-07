@@ -15,10 +15,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 }) => {
   const renderContent = () => {
     switch (path) {
-      case "/mis-casos":
-      case "/dashboard/mis-casos":
+      case "/mis_casos":
+      case "/dashboard/mis_casos":
         return <DashboardCasesContent />;
-      case "/mis-resultados":
+      case "/mis_resultados":
       case "/dashboard/resultados":
         return <DashboardResultsContent />;
       case "/notificaciones":
@@ -26,7 +26,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       case "/configuracion":
       case "/dashboard/configuracion":
         return <DashboardSettingsContent />;
-      case "/dashboard/crea-caso":
+      case "/dashboard/crea_caso":
         return <DashboardSettingsContent />;
       default:
         return home;

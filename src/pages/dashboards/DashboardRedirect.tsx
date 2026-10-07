@@ -2,25 +2,28 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-import { CoordinatorDashboardPage } from "./CoordinatorDashboardPage";
-import { StudentDashboardPage } from "./StudentDashboardPage";
-import { PatientDashboardPage } from "./PatientDashboardPage";
+import {CoordinatorDashboardPage} from "../coordinator/CoordinatorDashboardPage";
+import { ResearcherDashboardPage } from "../researcher/ResearcherDashboardPage";
+import { PatientDashboardPage } from "../patient/PatientDashboardPage";
+import { AdminDashboardPage } from "../admin/AdminDashboardPage";
 
 export const DashboardRedirect: React.FC = () => {
-  // const { user } = useAuth();
+  const { user } = useAuth();
 
-  // if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
 
-  const user = { role: "paciente" }; // Simulación de usuario para pruebas
   switch (user.role) {
-    case "profesor":
+    case "coordinator":
       return <CoordinatorDashboardPage />;
 
-    case "estudiante":
-      return <StudentDashboardPage />;
+    case "researcher":
+      return <ResearcherDashboardPage />;
 
-    case "paciente":
+    case "patient":
       return <PatientDashboardPage />;
+
+    case "admin":
+      return <AdminDashboardPage />;
 
     default:
       return <Navigate to="/login" replace />;

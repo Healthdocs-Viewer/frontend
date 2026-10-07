@@ -5,7 +5,7 @@ import { apiClient } from '../services/apiClient';
 
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
-    user: { id: 'patient-1', email: 'patient@example.test', role: 'paciente', enabled: true },
+    user: { id: 'patient-1', email: 'patient@example.test', role: 'patient', enabled: true },
     token: 'token',
   }),
 }));

@@ -1,0 +1,92 @@
+{
+  "items": [
+    {
+      "id": "850e8400-e29b-41d4-a716-446655440102",
+      "originalFilename": "informe-rodilla.pdf",
+      "contentType": "application/pdf",
+      "sizeBytes": 524288,
+      "case": {
+        "id": "550e8400-e29b-41d4-a716-446655440102",
+        "referenceCode": "CAS-20260920-0038",
+        "studyName": "Resonancia de rodilla"
+      },
+      "status": "UPLOADED",
+      "uploadedAt": "2026-09-21T16:20:00Z",
+      "updatedAt": "2026-09-21T16:20:00Z",
+      "availableAt": null,
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "850e8400-e29b-41d4-a716-446655440104",
+      "originalFilename": "resultado-ecografia.pdf",
+      "contentType": "application/pdf",
+      "sizeBytes": 393216,
+      "case": {
+        "id": "550e8400-e29b-41d4-a716-446655440104",
+        "referenceCode": "CAS-20260918-0027",
+        "studyName": "Ecografía abdominal"
+      },
+      "status": "UPLOADED",
+      "uploadedAt": "2026-09-19T08:45:00Z",
+      "updatedAt": "2026-09-19T08:45:00Z",
+      "availableAt": null,
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "850e8400-e29b-41d4-a716-446655440105",
+      "originalFilename": "informe-mamografia.pdf",
+      "contentType": "application/pdf",
+      "sizeBytes": 458752,
+      "case": {
+        "id": "550e8400-e29b-41d4-a716-446655440105",
+        "referenceCode": "CAS-20260916-0018",
+        "studyName": "Mamografía bilateral"
+      },
+      "status": "AVAILABLE",
+      "uploadedAt": "2026-09-17T09:12:00Z",
+      "updatedAt": "2026-09-17T10:00:00Z",
+      "availableAt": "2026-09-17T10:00:00Z",
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    },
+    {
+      "id": "850e8400-e29b-41d4-a716-446655440106",
+      "originalFilename": "informe-columna.pdf",
+      "contentType": "application/pdf",
+      "sizeBytes": 425984,
+      "case": {
+        "id": "550e8400-e29b-41d4-a716-446655440106",
+        "referenceCode": "CAS-20260915-0013",
+        "studyName": "Radiografía de columna"
+      },
+      "status": "AVAILABLE",
+      "uploadedAt": "2026-09-16T14:08:00Z",
+      "updatedAt": "2026-09-16T15:00:00Z",
+      "availableAt": "2026-09-16T15:00:00Z",
+      "deletedAt": null,
+      "deletedBy": null,
+      "deletionReason": null
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "uploaded": 2,
+    "available": 2,
+    "correctionRequired": 0,
+    "deleted": 0
+  },
+  "page": 0,
+  "size": 8,
+  "totalItems": 4,
+  "totalPages": 1,
+  "appliedFilters": {
+    "q": "",
+    "status": null,
+    "sort": "uploadedAt,desc"
+  }
+}

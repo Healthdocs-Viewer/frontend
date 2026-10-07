@@ -1,0 +1,232 @@
+{
+  "summary": {
+    "activeCases": 4,
+    "inProgressCases": 2,
+    "availableResults": 1,
+    "notificationsRequiringAttention": 1
+  },
+  "recentCases": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "referenceCode": "CAS-20260921-0002",
+      "studyName": "Radiografía de tórax",
+      "status": "CREATED",
+      "createdAt": "2026-09-20T20:45:00Z"
+    },
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "referenceCode": "CAS-20260918-0001",
+      "studyName": "Resonancia de rodilla",
+      "status": "ENABLED_FOR_PROCESSING",
+      "createdAt": "2026-09-18T16:20:00Z"
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "referenceCode": "CAS-20260910-0005",
+      "studyName": "TAC de abdomen",
+      "status": "RESULT_AVAILABLE",
+      "createdAt": "2026-09-10T11:32:00Z"
+    },
+    {
+      "id": "44444444-4444-4444-8444-444444444444",
+      "referenceCode": "CAS-20260905-0003",
+      "studyName": "Radiografía de columna",
+      "status": "FILES_RECEIVED",
+      "createdAt": "2026-09-05T09:15:00Z"
+    },
+    {
+      "id": "55555555-5555-4555-8555-555555555555",
+      "referenceCode": "CAS-20260901-0004",
+      "studyName": "Ecografía abdominal",
+      "status": "CREATED",
+      "createdAt": "2026-09-01T14:30:00Z"
+    }
+  ],
+  "nextSteps": [
+    {
+      "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      "caseId": "11111111-1111-4111-8111-111111111111",
+      "caseReferenceCode": "CAS-20260921-0002",
+      "type": "ACCEPT_CONSENT",
+      "title": "Completar consentimiento",
+      "description": "Revisa y acepta los términos para continuar con el estudio.",
+      "priority": "HIGH",
+      "createdAt": "2026-09-20T20:45:00Z",
+      "action": {
+        "type": "ACCEPT_CONSENT",
+        "label": "Completar"
+      }
+    },
+    {
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      "caseId": "22222222-2222-4222-8222-222222222222",
+      "caseReferenceCode": "CAS-20260918-0001",
+      "type": "UPLOAD_FILE",
+      "title": "Cargar archivo pendiente",
+      "description": "Adjunta las imágenes o documentos solicitados por tu centro médico.",
+      "priority": "NORMAL",
+      "createdAt": "2026-09-18T16:20:00Z",
+      "action": {
+        "type": "UPLOAD_FILE",
+        "label": "Cargar"
+      }
+    },
+    {
+      "id": "12121212-1212-4212-8212-121212121212",
+      "caseId": "44444444-4444-4444-8444-444444444444",
+      "caseReferenceCode": "CAS-20260905-0003",
+      "type": "SIGN_AUTHORIZATION",
+      "title": "Firmar autorización médica",
+      "description": "Confirma la autorización necesaria para continuar con tu estudio.",
+      "priority": "LOW",
+      "createdAt": "2026-09-17T11:30:00Z",
+      "action": {
+        "type": "SIGN_AUTHORIZATION",
+        "label": "Firmar"
+      }
+    },
+    {
+      "id": "13131313-1313-4313-8313-131313131313",
+      "caseId": "55555555-5555-4555-8555-555555555555",
+      "caseReferenceCode": "CAS-20260901-0004",
+      "type": "SCHEDULE_FOLLOW_UP",
+      "title": "Agendar seguimiento",
+      "description": "Programa una cita de seguimiento con tu centro médico.",
+      "priority": "NORMAL",
+      "createdAt": "2026-09-16T09:10:00Z",
+      "action": {
+        "type": "SCHEDULE_FOLLOW_UP",
+        "label": "Agendar"
+      }
+    },
+    {
+      "id": "14141414-1414-4414-8414-141414141414",
+      "caseId": "33333333-3333-4333-8333-333333333333",
+      "caseReferenceCode": "CAS-20260910-0005",
+      "type": "DOWNLOAD_REPORT",
+      "title": "Descargar informe médico",
+      "description": "El informe final de tu estudio está listo para descargar.",
+      "priority": "LOW",
+      "createdAt": "2026-09-15T14:25:00Z",
+      "action": {
+        "type": "DOWNLOAD_REPORT",
+        "label": "Descargar"
+      }
+    }
+  ],
+  "recentActivity": [
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000001",
+      "type": "RESULT_PUBLISHED",
+      "title": "Resultado publicado",
+      "description": "El resultado del caso CAS-20260910-0005 ya está disponible.",
+      "caseId": "33333333-3333-4333-8333-333333333333",
+      "caseReferenceCode": "CAS-20260910-0005",
+      "occurredAt": "2026-09-20T20:17:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000002",
+      "type": "FILE_UPLOADED",
+      "title": "Archivo cargado",
+      "description": "Has cargado un archivo para el caso CAS-20260918-0001.",
+      "caseId": "22222222-2222-4222-8222-222222222222",
+      "caseReferenceCode": "CAS-20260918-0001",
+      "occurredAt": "2026-09-18T16:23:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000003",
+      "type": "CONSENT_ACCEPTED",
+      "title": "Consentimiento aceptado",
+      "description": "Aceptaste el consentimiento del caso CAS-20260921-0002.",
+      "caseId": "11111111-1111-4111-8111-111111111111",
+      "caseReferenceCode": "CAS-20260921-0002",
+      "occurredAt": "2026-09-17T15:12:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000004",
+      "type": "CASE_STATUS_CHANGED",
+      "title": "Caso actualizado",
+      "description": "El estado del caso CAS-20260918-0001 cambió a en proceso.",
+      "caseId": "22222222-2222-4222-8222-222222222222",
+      "caseReferenceCode": "CAS-20260918-0001",
+      "occurredAt": "2026-09-16T10:42:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000005",
+      "type": "DOCUMENT_RECEIVED",
+      "title": "Documento recibido",
+      "description": "El centro médico recibió el documento del caso CAS-20260905-0003.",
+      "caseId": "44444444-4444-4444-8444-444444444444",
+      "caseReferenceCode": "CAS-20260905-0003",
+      "occurredAt": "2026-09-15T18:05:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000006",
+      "type": "NOTIFICATION_SENT",
+      "title": "Notificación enviada",
+      "description": "Te enviamos una notificación sobre el caso CAS-20260921-0002.",
+      "caseId": "11111111-1111-4111-8111-111111111111",
+      "caseReferenceCode": "CAS-20260921-0002",
+      "occurredAt": "2026-09-14T09:30:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000007",
+      "type": "REMINDER_SENT",
+      "title": "Recordatorio enviado",
+      "description": "Tienes un paso pendiente para continuar con el caso CAS-20260921-0002.",
+      "caseId": "11111111-1111-4111-8111-111111111111",
+      "caseReferenceCode": "CAS-20260921-0002",
+      "occurredAt": "2026-09-13T08:15:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000008",
+      "type": "MEDICAL_ORDER_ADDED",
+      "title": "Orden médica agregada",
+      "description": "Se agregó una orden médica al caso CAS-20260901-0004.",
+      "caseId": "55555555-5555-4555-8555-555555555555",
+      "caseReferenceCode": "CAS-20260901-0004",
+      "occurredAt": "2026-09-12T14:50:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000009",
+      "type": "PERSONAL_DATA_CONFIRMED",
+      "title": "Datos personales confirmados",
+      "description": "Confirmaste tus datos personales para el caso CAS-20260905-0003.",
+      "caseId": "44444444-4444-4444-8444-444444444444",
+      "caseReferenceCode": "CAS-20260905-0003",
+      "occurredAt": "2026-09-11T12:00:00Z"
+    },
+    {
+      "id": "a0a0a0a0-a0a0-4a0a-8a0a-000000000010",
+      "type": "RESULT_VIEWED",
+      "title": "Resultado consultado",
+      "description": "Consultaste el resultado disponible del caso CAS-20260910-0005.",
+      "caseId": "33333333-3333-4333-8333-333333333333",
+      "caseReferenceCode": "CAS-20260910-0005",
+      "occurredAt": "2026-09-10T21:05:00Z"
+    }
+  ],
+  "availableResults": [
+    {
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      "caseId": "33333333-3333-4333-8333-333333333333",
+      "caseReferenceCode": "CAS-20260910-0005",
+      "studyName": "TAC de abdomen",
+      "availableAt": "2026-09-20T20:17:00Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      "caseId": "33333333-3333-4333-8333-333333333333",
+      "caseReferenceCode": "CAS-20260910-0005",
+      "studyName": "TAC de abdomen",
+      "availableAt": "2026-09-20T20:17:00Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+      "caseId": "33333333-3333-4333-8333-333333333333",
+      "caseReferenceCode": "CAS-20260910-0005",
+      "studyName": "TAC de abdomen",
+      "availableAt": "2026-09-20T20:17:00Z"
+    }
+  ]
+}

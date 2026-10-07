@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "availableCaseCount": 4,
+    "latestPublishedAt": "2026-09-21T20:45:00Z"
+  },
+  "items": [
+    {
+      "resultId": "2eb5c6de-7b5d-48b6-a66c-c03ef73572e1",
+      "caseId": "550e8400-e29b-41d4-a716-446655440002",
+      "caseReferenceCode": "CAS-20260921-0002",
+      "studyName": "Radiografía de tórax",
+      "fileName": "Informe_corregido.pdf",
+      "contentType": "application/pdf",
+      "availableAt": "2026-09-21T20:45:00Z",
+      "publicationType": "CORRECTED"
+    },
+    {
+      "resultId": "87b57d3e-79b3-4fe7-a866-59dfece14ed1",
+      "caseId": "550e8400-e29b-41d4-a716-446655440005",
+      "caseReferenceCode": "CAS-20260910-0005",
+      "studyName": "TAC de abdomen",
+      "fileName": "Informe.pdf",
+      "contentType": "application/pdf",
+      "availableAt": "2026-09-20T20:17:00Z",
+      "publicationType": "INITIAL"
+    },
+    {
+      "resultId": "ed64ccf0-58c6-445e-b686-9311ef201f16",
+      "caseId": "550e8400-e29b-41d4-a716-446655440003",
+      "caseReferenceCode": "CAS-20260918-0001",
+      "studyName": "Resonancia de rodilla",
+      "fileName": "Informe_rodilla.pdf",
+      "contentType": "application/pdf",
+      "availableAt": "2026-09-18T16:20:00Z",
+      "publicationType": "INITIAL"
+    },
+    {
+      "resultId": "25d37451-8fd7-4f31-8fd4-e576f169d97e",
+      "caseId": "550e8400-e29b-41d4-a716-446655440004",
+      "caseReferenceCode": "CAS-20260905-0003",
+      "studyName": "Ecografía abdominal",
+      "fileName": "Informe_abdominal.pdf",
+      "contentType": "application/pdf",
+      "availableAt": "2026-09-05T09:15:00Z",
+      "publicationType": "INITIAL"
+    }
+  ],
+  "totalItems": 4
+}

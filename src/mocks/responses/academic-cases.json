@@ -1,0 +1,160 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440101",
+    "referenceCode": "CAS-20260921-0042",
+    "studyName": "Radiografía de tórax",
+    "status": "ENABLED_FOR_PROCESSING",
+    "createdAt": "2026-09-21T14:32:00Z",
+    "files": [
+      {
+        "id": "650e8400-e29b-41d4-a716-446655440101",
+        "originalFilename": "radiografia-torax.dcm",
+        "contentType": "application/dicom",
+        "sizeBytes": 1258291,
+        "fileKind": "INPUT"
+      }
+    ],
+    "result": null
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440102",
+    "referenceCode": "CAS-20260920-0038",
+    "studyName": "Resonancia de rodilla",
+    "status": "RESULT_UPLOADED",
+    "createdAt": "2026-09-20T10:15:00Z",
+    "files": [
+      {
+        "id": "650e8400-e29b-41d4-a716-446655440102",
+        "originalFilename": "resonancia-rodilla.dcm",
+        "contentType": "application/dicom",
+        "sizeBytes": 2097152,
+        "fileKind": "INPUT"
+      },
+      {
+        "id": "750e8400-e29b-41d4-a716-446655440102",
+        "originalFilename": "informe-rodilla.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 524288,
+        "fileKind": "RESULT"
+      }
+    ],
+    "result": {
+      "id": "850e8400-e29b-41d4-a716-446655440102",
+      "originalFilename": "informe-rodilla.pdf",
+      "status": "UPLOADED",
+      "uploadedBy": "950e8400-e29b-41d4-a716-446655440102",
+      "uploadedAt": "2026-09-21T16:20:00Z",
+      "availableAt": null
+    }
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440103",
+    "referenceCode": "CAS-20260919-0031",
+    "studyName": "Tomografía de abdomen",
+    "status": "ENABLED_FOR_PROCESSING",
+    "createdAt": "2026-09-19T09:48:00Z",
+    "files": [
+      {
+        "id": "650e8400-e29b-41d4-a716-446655440103",
+        "originalFilename": "tomografia-abdomen.zip",
+        "contentType": "application/zip",
+        "sizeBytes": 3145728,
+        "fileKind": "INPUT"
+      }
+    ],
+    "result": null
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440104",
+    "referenceCode": "CAS-20260918-0027",
+    "studyName": "Ecografía abdominal",
+    "status": "RESULT_UPLOADED",
+    "createdAt": "2026-09-18T16:12:00Z",
+    "files": [
+      {
+        "id": "650e8400-e29b-41d4-a716-446655440104",
+        "originalFilename": "ecografia-abdominal.dcm",
+        "contentType": "application/dicom",
+        "sizeBytes": 1048576,
+        "fileKind": "INPUT"
+      },
+      {
+        "id": "750e8400-e29b-41d4-a716-446655440104",
+        "originalFilename": "resultado-ecografia.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 393216,
+        "fileKind": "RESULT"
+      }
+    ],
+    "result": {
+      "id": "850e8400-e29b-41d4-a716-446655440104",
+      "originalFilename": "resultado-ecografia.pdf",
+      "status": "UPLOADED",
+      "uploadedBy": "950e8400-e29b-41d4-a716-446655440104",
+      "uploadedAt": "2026-09-19T08:45:00Z",
+      "availableAt": null
+    }
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440105",
+    "referenceCode": "CAS-20260916-0018",
+    "studyName": "Mamografía bilateral",
+    "status": "RESULT_AVAILABLE",
+    "createdAt": "2026-09-16T13:05:00Z",
+    "files": [
+      {
+        "id": "650e8400-e29b-41d4-a716-446655440105",
+        "originalFilename": "mamografia-bilateral.dcm",
+        "contentType": "application/dicom",
+        "sizeBytes": 1572864,
+        "fileKind": "INPUT"
+      },
+      {
+        "id": "750e8400-e29b-41d4-a716-446655440105",
+        "originalFilename": "informe-mamografia.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 458752,
+        "fileKind": "RESULT"
+      }
+    ],
+    "result": {
+      "id": "850e8400-e29b-41d4-a716-446655440105",
+      "originalFilename": "informe-mamografia.pdf",
+      "status": "AVAILABLE",
+      "uploadedBy": "950e8400-e29b-41d4-a716-446655440105",
+      "uploadedAt": "2026-09-17T09:12:00Z",
+      "availableAt": "2026-09-17T10:00:00Z"
+    }
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440106",
+    "referenceCode": "CAS-20260915-0013",
+    "studyName": "Radiografía de columna",
+    "status": "RESULT_AVAILABLE",
+    "createdAt": "2026-09-15T09:26:00Z",
+    "files": [
+      {
+        "id": "650e8400-e29b-41d4-a716-446655440106",
+        "originalFilename": "radiografia-columna.dcm",
+        "contentType": "application/dicom",
+        "sizeBytes": 1310720,
+        "fileKind": "INPUT"
+      },
+      {
+        "id": "750e8400-e29b-41d4-a716-446655440106",
+        "originalFilename": "informe-columna.pdf",
+        "contentType": "application/pdf",
+        "sizeBytes": 425984,
+        "fileKind": "RESULT"
+      }
+    ],
+    "result": {
+      "id": "850e8400-e29b-41d4-a716-446655440106",
+      "originalFilename": "informe-columna.pdf",
+      "status": "AVAILABLE",
+      "uploadedBy": "950e8400-e29b-41d4-a716-446655440106",
+      "uploadedAt": "2026-09-16T14:08:00Z",
+      "availableAt": "2026-09-16T15:00:00Z"
+    }
+  }
+]

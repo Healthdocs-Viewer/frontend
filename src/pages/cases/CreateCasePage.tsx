@@ -5,7 +5,6 @@ import {
   Bell,
   CalendarDays,
   Check,
-  ChevronDown,
   CloudUpload,
   FileText,
   Info,
@@ -26,7 +25,7 @@ const inputClassName =
 
 export const CreateCasePage = () => {
   const navigate = useNavigate();
-  const [studyType, setStudyType] = React.useState("Radiografía de tórax");
+  const [studyName, setStudyName] = React.useState("");
   const [reference, setReference] = React.useState("Control anual 2026");
   const [institution, setInstitution] = React.useState("Clínica Salud Total");
   const [date, setDate] = React.useState("2026-09-20");
@@ -109,41 +108,31 @@ export const CreateCasePage = () => {
             <form onSubmit={goToConsent} className="mt-5 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Tipo de estudio <span className="text-rose-500">*</span>
+                  Nombre del estudio <span className="text-rose-500">*</span>
                   <span className="relative block">
                     <Stethoscope
                       className="absolute left-3 top-3 h-4 w-4 text-indigo-500"
                       aria-hidden="true"
                     />
-                    <select
+                    <input
                       required
-                      value={studyType}
-                      onChange={(e) => setStudyType(e.target.value)}
-                      className={`${inputClassName} appearance-none pl-10 pr-9`}
-                    >
-                      <option>Radiografía de tórax</option>
-                      <option>Resonancia de rodilla</option>
-                      <option>TAC de abdomen</option>
-                      <option>Ecografía abdominal</option>
-                    </select>
-                    <ChevronDown
-                      className="pointer-events-none absolute right-3 top-3 h-4 w-4 text-slate-500"
-                      aria-hidden="true"
+                      maxLength={200}
+                      placeholder="Escríbelo como aparece en tu orden médica"
+                      value={studyName}
+                      onChange={(e) => setStudyName(e.target.value)}
+                      className={`${inputClassName} pl-10`}
                     />
                   </span>
                 </label>
                 <label className="space-y-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Nombre o referencia del estudio{" "}
-                  <span className="text-rose-500">*</span>
+                  Referencia adicional (opcional)
                   <input
-                    required
                     value={reference}
                     onChange={(e) => setReference(e.target.value)}
                     className={inputClassName}
                   />
                   <span className="block text-xs font-normal text-slate-400">
-                    Puedes usar un nombre o referencia que te ayude a
-                    identificar el estudio.
+                    Agrega un dato opcional que te ayude a reconocer este caso.
                   </span>
                 </label>
                 <label className="space-y-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -200,7 +189,7 @@ export const CreateCasePage = () => {
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
                 <Button
                   variant="secondary"
-                  onClick={() => navigate("/mis-casos")}
+                  onClick={() => navigate("/mis_casos")}
                 >
                   Cancelar
                 </Button>
@@ -229,9 +218,8 @@ export const CreateCasePage = () => {
               </div>
             </div>
             <div className="mt-6 space-y-5">
-              <Tip icon={FileText} title="Verifica el tipo de estudio">
-                Selecciona el tipo de estudio que mejor describa tu caso para
-                facilitar su revisión.
+              <Tip icon={FileText} title="Escribe el nombre del estudio">
+                Si tienes una orden médica, usa el nombre tal como aparece allí.
               </Tip>
               <Tip icon={CalendarDays} title="Revisa la información">
                 Asegúrate de que la fecha y los datos del centro de origen sean
@@ -253,13 +241,13 @@ export const CreateCasePage = () => {
         />
       ) : currentStep === 3 ? (
         <FileUploadStep
-          studyType={studyType}
+          studyName={studyName}
           onBack={() => setCurrentStep(2)}
           onContinue={() => setCurrentStep(4)}
         />
       ) : (
         <ConfirmationStep
-          studyType={studyType}
+          studyName={studyName}
           reference={reference}
           institution={institution}
           date={date}
@@ -396,11 +384,11 @@ const ConsentStep = ({
 type UploadedFile = { name: string; size: string; type: "image" | "pdf" };
 
 const FileUploadStep = ({
-  studyType,
+  studyName,
   onBack,
   onContinue,
 }: {
-  studyType: string;
+  studyName: string;
   onBack: () => void;
   onContinue: () => void;
 }) => {
@@ -444,9 +432,9 @@ const FileUploadStep = ({
           </div>
           <div className="border-slate-200 sm:border-l sm:pl-4 dark:border-slate-700">
             <p className="text-slate-500 dark:text-slate-400">
-              Tipo de estudio:
+              Nombre del estudio:
             </p>
-            <p className="font-semibold">{studyType}</p>
+            <p className="font-semibold">{studyName}</p>
           </div>
         </div>
         <label className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-indigo-300 bg-indigo-50/30 px-4 py-5 text-center transition hover:bg-indigo-50 dark:border-indigo-700 dark:bg-indigo-950/20 dark:hover:bg-indigo-950/40">
@@ -568,14 +556,14 @@ const FileUploadStep = ({
 };
 
 const ConfirmationStep = ({
-  studyType,
+  studyName,
   reference,
   institution,
   date,
   notes,
   onBack,
 }: {
-  studyType: string;
+  studyName: string;
   reference: string;
   institution: string;
   date: string;
@@ -613,7 +601,7 @@ const ConfirmationStep = ({
       </div>
       <Summary title="Información del estudio" icon={Stethoscope}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <SummaryItem label="Tipo de estudio" value={studyType} />
+          <SummaryItem label="Nombre del estudio" value={studyName} />
           <SummaryItem
             label="Nombre o referencia del estudio"
             value={reference}
