@@ -1,14 +1,11 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { LoginRequest, UserProfile } from '../types/api';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { LoginRequest, UserProfile } from "../types/api";
 import {
   apiClient,
-  clearStoredToken,
-  getStoredToken,
   isMockMode,
   setMockMode as updateMockMode,
-  setStoredToken,
-} from '../services/apiClient';
-import { isMockTokenExpired } from '../services/mockApi';
+} from "../services/apiClient";
+import { authService } from "../services/authService";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -17,151 +14,179 @@ interface AuthContextType {
   /** Mensaje de error 403: el usuario está autenticado pero sin permisos. Nunca indica sesión expirada. */
   forbiddenMessage: string | null;
   isMock: boolean;
+  usesManagedAuth: boolean;
+  usesSupabaseAuth: boolean;
   setMock: (enabled: boolean) => void;
   login: (credentials: LoginRequest) => Promise<void>;
-  logout: () => void;
+  completeRegistration: () => Promise<UserProfile>;
+  logout: () => Promise<void>;
   clearForbiddenAlert: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [token, setToken] = useState<string | null>(getStoredToken());
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [forbiddenMessage, setForbiddenMessage] = useState<string | null>(null);
   const [isMock, setIsMock] = useState<boolean>(isMockMode());
 
-  /**
-   * Restaurar sesión si existe un token almacenado.
-   *
-   * Reglas:
-   * - Sin token          → sin sesión, continuar normalmente.
-   * - GET /me OK         → sesión válida, restaurar usuario.
-   * - Error 401/NO_TOKEN → token inválido o expirado → limpiar sesión.
-   * - Error 403          → usuario autenticado sin acceso al recurso → mantener sesión,
-   *                        mostrar aviso (no limpiar token).
-   * - Error de red       → estado desconocido → mantener token, no cerrar sesión,
-   *                        el usuario podrá reintentar cuando haya conectividad.
-   */
   useEffect(() => {
-    async function restoreSession() {
-      const stored = getStoredToken();
-      if (!stored) {
-        setIsLoading(false);
-        return;
-      }
-      if (isMockMode() && isMockTokenExpired(stored)) {
-        clearStoredToken();
-        setUser(null);
-        setToken(null);
-        setIsLoading(false);
-        return;
-      }
+    let active = true;
+
+    const unsubscribeAuth = authService.onAuthStateChange(
+      (event, accessToken) => {
+        if (!active) return;
+        setToken(accessToken);
+        if (
+          event === "SIGNED_OUT" ||
+          (!authService.usesManagedProvider && accessToken === null)
+        ) {
+          setUser(null);
+          setForbiddenMessage(null);
+        }
+      },
+    );
+
+    const restoreSession = async () => {
       try {
-        const profile = await apiClient.auth.getMe();
-        setUser(profile);
-        setToken(stored);
-      } catch (err: any) {
-        const code: string = err?.code ?? '';
-        const status: number = err?.status ?? 0;
+        const stored = await authService.getToken();
+        if (!active) return;
+        if (!stored) {
+          setToken(null);
+          setUser(null);
+          return;
+        }
 
-        const isAuthFailure =
-          status === 401 ||
-          code === 'UNAUTHORIZED' ||
-          code === 'NO_TOKEN';
-
-        const isForbidden =
-          status === 403 ||
-          code === 'FORBIDDEN';
-
-        if (isAuthFailure) {
-          // Token inválido o expirado: cerrar sesión limpiamente.
-          clearStoredToken();
+        if (authService.isMockSession(stored)) {
+          await authService.logout();
           setUser(null);
           setToken(null);
-        } else if (isForbidden) {
-          // Identidad autenticada sin acceso. Mantener sesión; mostrar aviso.
-          const message =
-            err?.message || 'Tu cuenta no tiene acceso habilitado en este momento.';
-          setForbiddenMessage(message);
+          return;
         }
-        // Error de red (TypeError u otros): no limpiar sesión; isLoading pasa a false
-        // y la app intentará de nuevo en la próxima acción del usuario.
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    restoreSession();
-  }, [isMock]);
 
-  /**
-   * Escuchar eventos globales de seguridad emitidos por apiClient.
-   *
-   * 401 → cerrar sesión (limpiar token + usuario).
-   * 403 → mostrar aviso de permisos, NO cerrar sesión.
-   */
-  useEffect(() => {
+        setToken(stored);
+        // Supabase can authenticate a newly confirmed email before Healthdocs has
+        // provisioned its business profile. Registration is idempotent, so it also
+        // restores existing profiles without changing their roles.
+        if (authService.usesSupabaseAuth) {
+          await apiClient.auth.register();
+        }
+        const profile = await apiClient.auth.getMe();
+        if (active) setUser(profile);
+      } catch (err: any) {
+        const code: string = err?.code ?? "";
+        const status: number = err?.status ?? 0;
+        if (status === 401 || code === "UNAUTHORIZED" || code === "NO_TOKEN") {
+          void authService.logout().catch(() => undefined);
+          if (active) {
+            setUser(null);
+            setToken(null);
+          }
+        } else if (status === 403 || code === "FORBIDDEN") {
+          if (active)
+            setForbiddenMessage(
+              err?.message ||
+                "Tu cuenta no tiene acceso habilitado en este momento.",
+            );
+        }
+        // Un fallo de red conserva la sesión del proveedor y permite reintentar luego.
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
+
+    void restoreSession();
+
     const handleUnauthorized = () => {
-      // clearStoredToken() ya fue llamado por notifyUnauthorized en apiClient
-      // para rutas protegidas, pero en el nuevo diseño notifyUnauthorized NO limpia.
-      // Lo hacemos aquí como única fuente de verdad.
-      clearStoredToken();
+      void authService.logout().catch(() => undefined);
       setUser(null);
       setToken(null);
     };
-
     const handleForbidden = (event: Event) => {
       const ce = event as CustomEvent<{ message?: string }>;
-      const message =
-        ce.detail?.message || 'Permisos insuficientes para realizar esta operación.';
-      setForbiddenMessage(message);
+      setForbiddenMessage(
+        ce.detail?.message ||
+          "Permisos insuficientes para realizar esta operación.",
+      );
     };
+    const handleMockChanged = (event: Event) =>
+      setIsMock((event as CustomEvent<boolean>).detail);
 
-    const handleMockChanged = (event: Event) => {
-      const ce = event as CustomEvent<boolean>;
-      setIsMock(ce.detail);
-    };
-
-    window.addEventListener('healthdocs_unauthorized', handleUnauthorized);
-    window.addEventListener('healthdocs_forbidden', handleForbidden);
-    window.addEventListener('healthdocs_mock_mode_changed', handleMockChanged);
+    window.addEventListener("healthdocs_unauthorized", handleUnauthorized);
+    window.addEventListener("healthdocs_forbidden", handleForbidden);
+    window.addEventListener("healthdocs_mock_mode_changed", handleMockChanged);
 
     return () => {
-      window.removeEventListener('healthdocs_unauthorized', handleUnauthorized);
-      window.removeEventListener('healthdocs_forbidden', handleForbidden);
-      window.removeEventListener('healthdocs_mock_mode_changed', handleMockChanged);
+      active = false;
+      unsubscribeAuth();
+      window.removeEventListener("healthdocs_unauthorized", handleUnauthorized);
+      window.removeEventListener("healthdocs_forbidden", handleForbidden);
+      window.removeEventListener(
+        "healthdocs_mock_mode_changed",
+        handleMockChanged,
+      );
     };
-  }, []);
+  }, [isMock]);
 
   const login = async (credentials: LoginRequest) => {
     setIsLoading(true);
     try {
-      const res = await apiClient.auth.login(credentials);
-      setStoredToken(res.token);
-      setToken(res.token);
-      setUser(res.user);
+      console.log(credentials);
+      const session = await authService.login(credentials);
+      setToken(session.accessToken);
+      if (authService.usesSupabaseAuth) {
+        await apiClient.auth.register();
+      }
+      const profile = await apiClient.auth.getMe();
+      setUser(profile);
       setForbiddenMessage(null);
+    } catch (error) {
+      setUser(null);
+      const authError = error as { code?: string; status?: number };
+      if (
+        authService.usesManagedProvider &&
+        (authError.code === "UNAUTHORIZED" || authError.status === 401)
+      ) {
+        throw new Error(
+          "La cuenta del proveedor inició sesión, pero aún no está vinculada a un usuario de Healthdocs.",
+        );
+      }
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    clearStoredToken();
+  const completeRegistration = async () => {
+    setIsLoading(true);
+    try {
+      await apiClient.auth.register();
+      const profile = await apiClient.auth.getMe();
+      const activeToken = await authService.getToken();
+      setToken(activeToken);
+      setUser(profile);
+      setForbiddenMessage(null);
+      return profile;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    await authService.logout();
     setUser(null);
     setToken(null);
     setForbiddenMessage(null);
   };
 
   const setMock = (enabled: boolean) => {
+    void logout().catch(() => undefined);
     updateMockMode(enabled);
     setIsMock(enabled);
-    logout();
-  };
-
-  const clearForbiddenAlert = () => {
-    setForbiddenMessage(null);
   };
 
   return (
@@ -172,10 +197,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         forbiddenMessage,
         isMock,
+        usesManagedAuth: authService.usesManagedProvider,
+        usesSupabaseAuth: authService.usesSupabaseAuth,
         setMock,
         login,
+        completeRegistration,
         logout,
-        clearForbiddenAlert,
+        clearForbiddenAlert: () => setForbiddenMessage(null),
       }}
     >
       {children}
@@ -185,8 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth debe ser usado dentro de un AuthProvider');
-  }
+  if (!context)
+    throw new Error("useAuth debe ser usado dentro de un AuthProvider");
   return context;
 }

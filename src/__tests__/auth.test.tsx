@@ -16,6 +16,7 @@ import {
   getStoredToken,
   setStoredToken,
   isMockMode,
+  apiClient,
 } from '../services/apiClient';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 
@@ -23,7 +24,7 @@ import { AuthProvider, useAuth } from '../context/AuthContext';
 
 /** Componente de prueba que expone el estado de AuthContext como atributos de datos. */
 const AuthTestConsumer: React.FC = () => {
-  const { user, token, isLoading, forbiddenMessage, login, logout } = useAuth();
+  const { user, token, isLoading, forbiddenMessage, login, logout, completeRegistration } = useAuth();
   return (
     <div>
       <span data-testid="loading">{String(isLoading)}</span>
@@ -60,6 +61,12 @@ const AuthTestConsumer: React.FC = () => {
         onClick={() => login({ email: 'bad', password: 'wrong' }).catch(() => {})}
       >
         Login Bad
+      </button>
+      <button
+        data-testid="complete-registration"
+        onClick={() => completeRegistration().catch(() => {})}
+      >
+        Complete registration
       </button>
     </div>
   );
@@ -101,7 +108,7 @@ describe('Login — cada rol', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('user').textContent).toBe('paciente');
-      expect(screen.getByTestId('role').textContent).toBe('paciente');
+      expect(screen.getByTestId('role').textContent).toBe('patient');
       expect(screen.getByTestId('token').textContent).toBe('present');
     });
   });
@@ -116,7 +123,7 @@ describe('Login — cada rol', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('user').textContent).toBe('estudiante');
-      expect(screen.getByTestId('role').textContent).toBe('estudiante');
+      expect(screen.getByTestId('role').textContent).toBe('researcher');
     });
   });
 
@@ -130,7 +137,7 @@ describe('Login — cada rol', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('user').textContent).toBe('profesor');
-      expect(screen.getByTestId('role').textContent).toBe('profesor');
+      expect(screen.getByTestId('role').textContent).toBe('coordinator');
     });
   });
 
@@ -181,6 +188,32 @@ describe('Restauración de sesión', () => {
   });
 });
 
+describe('Registro de Healthdocs', () => {
+  it('provisiona la cuenta y después carga el perfil con GET /me', async () => {
+    const profile = {
+      id: '00000000-0000-0000-0000-000000000001',
+      email: 'nuevo@example.com',
+      role: 'patient' as const,
+      enabled: true,
+    };
+    const register = vi.spyOn(apiClient.auth, 'register').mockResolvedValue(profile);
+    const getMe = vi.spyOn(apiClient.auth, 'getMe').mockResolvedValue(profile);
+
+    renderAuth();
+    await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'));
+
+    await act(async () => {
+      await userEvent.click(screen.getByTestId('complete-registration'));
+    });
+
+    expect(register).toHaveBeenCalledOnce();
+    expect(getMe).toHaveBeenCalledOnce();
+    expect(register.mock.invocationCallOrder[0]).toBeLessThan(getMe.mock.invocationCallOrder[0]);
+    expect(screen.getByTestId('user').textContent).toBe(profile.email);
+    expect(screen.getByTestId('role').textContent).toBe('patient');
+  });
+});
+
 // ─── 3. Token inválido o expirado ─────────────────────────────────────────────
 
 describe('Token inválido o expirado', () => {
@@ -224,7 +257,7 @@ describe('Token inválido o expirado', () => {
   it('token mock expirado en localStorage → se rechaza y limpia antes de restaurar sesión', async () => {
     const expiredPayload = {
       sub: 'b0000001-0000-0000-0000-000000000001',
-      role: 'paciente',
+      role: 'patient',
       email: 'paciente',
       exp: Math.floor(Date.now() / 1000) - 3600,
     };
@@ -245,7 +278,7 @@ describe('Token inválido o expirado', () => {
   it('operaciones mock rechazan tokens mock expirados con 401 UNAUTHORIZED', async () => {
     const expiredPayload = {
       sub: 'b0000001-0000-0000-0000-000000000001',
-      role: 'paciente',
+      role: 'patient',
       email: 'paciente',
       exp: Math.floor(Date.now() / 1000) - 10,
     };
@@ -258,7 +291,7 @@ describe('Token inválido o expirado', () => {
     });
 
     await expect(
-      mockBackendService.createCase(expiredToken, { studyType: 'RADIOGRAFIA_TORAX' })
+      mockBackendService.createCase(expiredToken, { studyName: 'Radiografía de tórax' })
     ).rejects.toMatchObject({
       status: 401,
       code: 'UNAUTHORIZED',
@@ -344,15 +377,15 @@ describe('Credenciales alineadas con el backend', () => {
   });
 
   it('cada rol tiene su contraseña correcta', () => {
-    const paciente = TEST_USERS.find((u) => u.user.role === 'paciente');
+    const paciente = TEST_USERS.find((u) => u.user.role === 'patient');
     expect(paciente?.email).toBe('paciente');
     expect(paciente?.password).toBe('paciente123');
 
-    const estudiante = TEST_USERS.find((u) => u.user.role === 'estudiante');
+    const estudiante = TEST_USERS.find((u) => u.user.role === 'researcher');
     expect(estudiante?.email).toBe('estudiante');
     expect(estudiante?.password).toBe('estudiante123');
 
-    const profesor = TEST_USERS.find((u) => u.user.role === 'profesor');
+    const profesor = TEST_USERS.find((u) => u.user.role === 'coordinator');
     expect(profesor?.email).toBe('profesor');
     expect(profesor?.password).toBe('profesor123');
   });

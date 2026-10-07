@@ -1,24 +1,37 @@
-import React, { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { QUICK_LOGIN_CREDENTIALS } from '../../services/mockApi';
-import { Shield, Lock, User, ArrowRight, UserCheck, AlertCircle, ShieldAlert } from 'lucide-react';
+import React, { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { QUICK_LOGIN_CREDENTIALS } from "../../services/mockApi";
+import {
+  Lock,
+  User,
+  ArrowRight,
+  UserCheck,
+  AlertCircle,
+  ShieldAlert,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { OAuthButtons } from "../../components/auth/OAuthButtons";
+import { AuthLayout } from "../../components/auth/AuthLayout";
 
 /**
  * Determina si un error es un 403 (cuenta autenticada sin acceso habilitado).
  * Así la UI puede mostrar un mensaje específico en lugar del genérico de credenciales.
  */
 function isForbiddenError(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false;
+  if (!err || typeof err !== "object") return false;
   const e = err as Record<string, unknown>;
-  return e.code === 'FORBIDDEN' || Number(e.status) === 403;
+  return e.code === "FORBIDDEN" || Number(e.status) === 403;
 }
 
 export const LoginPage: React.FC = () => {
-  const { login, isLoading } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [errorKind, setErrorKind] = useState<'credentials' | 'forbidden' | null>(null);
+  const { login, isLoading, usesManagedAuth } = useAuth();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorKind, setErrorKind] = useState<
+    "credentials" | "forbidden" | null
+  >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,16 +39,19 @@ export const LoginPage: React.FC = () => {
     setErrorMessage(null);
     try {
       await login({ email: username, password });
+      navigate("/", { replace: true });
     } catch (err: any) {
       if (isForbiddenError(err)) {
-        setErrorKind('forbidden');
+        setErrorKind("forbidden");
         setErrorMessage(
-          err?.message || 'Tu cuenta no tiene acceso habilitado. Contacta al administrador.'
+          err?.message ||
+            "Tu cuenta no tiene acceso habilitado. Contacta al administrador.",
         );
       } else {
-        setErrorKind('credentials');
+        setErrorKind("credentials");
         setErrorMessage(
-          err?.message || 'Credenciales incorrectas. Verifica tu usuario y contraseña.'
+          err?.message ||
+            "Credenciales incorrectas. Verifica tu usuario y contraseña.",
         );
       }
     }
@@ -50,39 +66,35 @@ export const LoginPage: React.FC = () => {
       await login({ email, password: pwd });
     } catch (err: any) {
       if (isForbiddenError(err)) {
-        setErrorKind('forbidden');
+        setErrorKind("forbidden");
         setErrorMessage(
-          err?.message || 'Esta cuenta no tiene acceso habilitado.'
+          err?.message || "Esta cuenta no tiene acceso habilitado.",
         );
       } else {
-        setErrorKind('credentials');
+        setErrorKind("credentials");
         setErrorMessage(
-          err?.message || 'Error al iniciar sesión con la cuenta de prueba.'
+          err?.message || "Error al iniciar sesión con la cuenta de prueba.",
         );
       }
     }
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-slate-50">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="mx-auto w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md">
-          <Shield className="w-7 h-7" />
+    <AuthLayout>
+      <div>
+        <div className="mb-7 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            Bienvenido de nuevo
+          </h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          {usesManagedAuth
+              ? "Ingresa tu correo y contraseña para continuar."
+              : "Autenticación local de desarrollo"}
+          </p>
         </div>
-        <h2 className="mt-4 text-2xl font-extrabold text-slate-900 tracking-tight">
-          Healthdocs Viewer
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Autenticación local de desarrollo — Contrato OpenAPI v0.2.1
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-sm rounded-xl border border-slate-200 sm:px-10">
-
           {/* Alerta de error 401: credenciales incorrectas */}
-          {errorKind === 'credentials' && errorMessage && (
-            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2.5">
+          {errorKind === "credentials" && errorMessage && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold">Error de autenticación (401)</p>
@@ -92,8 +104,8 @@ export const LoginPage: React.FC = () => {
           )}
 
           {/* Alerta de error 403: sin acceso habilitado */}
-          {errorKind === 'forbidden' && errorMessage && (
-            <div className="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm flex items-start gap-2.5">
+          {errorKind === "forbidden" && errorMessage && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
               <ShieldAlert className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold">Acceso no habilitado (403)</p>
@@ -117,13 +129,17 @@ export const LoginPage: React.FC = () => {
                 </div>
                 <input
                   id="username"
-                  type="text"
+                  type={usesManagedAuth ? "email" : "text"}
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="usuario@healthdocs.local"
-                  autoComplete="username"
-                  className="block w-full pl-10 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder={
+                    usesManagedAuth
+                      ? "tu-correo@ejemplo.com"
+                      : "usuario@healthdocs.local"
+                  }
+                  autoComplete={usesManagedAuth ? "email" : "username"}
+                  className="block w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
               </div>
             </div>
@@ -147,7 +163,7 @@ export const LoginPage: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  className="block w-full pl-10 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="block w-full rounded-lg border border-slate-300 bg-white py-2 pl-10 pr-3 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 />
               </div>
             </div>
@@ -155,10 +171,10 @@ export const LoginPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-transparent bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-slate-900"
             >
               {isLoading ? (
-                'Iniciando sesión...'
+                "Iniciando sesión..."
               ) : (
                 <>
                   <span>Ingresar</span>
@@ -168,43 +184,60 @@ export const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Accesos rápidos — desacoplados del mock interno */}
-          <div className="mt-8 pt-6 border-t border-slate-200">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center mb-4">
-              Acceso rápido con cuentas de prueba
-            </p>
+          <OAuthButtons />
 
-            <div className="space-y-2.5">
-              {QUICK_LOGIN_CREDENTIALS.map((cred) => (
-                <button
-                  key={cred.role}
-                  type="button"
-                  onClick={() => handleQuickLogin(cred.email, cred.password)}
-                  disabled={isLoading}
-                  className="w-full text-left p-2.5 rounded-lg border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 flex items-center justify-between transition-all group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center text-slate-600 group-hover:text-indigo-600 transition-colors">
-                      <UserCheck className="w-4 h-4" />
+          {usesManagedAuth && (
+            <p className="mt-6 border-t border-slate-200 pt-5 text-center text-sm text-slate-600 dark:border-slate-800 dark:text-slate-400">
+              ¿No tienes una cuenta?{" "}
+              <Link
+                to="/signup"
+                className="font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
+              >
+                Regístrate
+              </Link>
+            </p>
+          )}
+
+          {!usesManagedAuth && (
+            <div className="mt-7 border-t border-slate-200 pt-5 dark:border-slate-800">
+              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Acceso rápido con cuentas de prueba
+              </p>
+
+              <div className="space-y-2.5">
+                {QUICK_LOGIN_CREDENTIALS.map((cred) => (
+                  <button
+                    key={cred.role}
+                    type="button"
+                    onClick={() => handleQuickLogin(cred.email, cred.password)}
+                    disabled={isLoading}
+                    className="group flex w-full items-center justify-between rounded-lg border border-slate-200 p-2.5 text-left transition-all hover:border-indigo-300 hover:bg-indigo-50/50 dark:border-slate-700 dark:hover:bg-slate-800"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600 transition-colors group-hover:bg-indigo-100 group-hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-300">
+                        <UserCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                          {cred.email}
+                        </p>
+                        <p className="text-xs capitalize text-slate-500 dark:text-slate-400">
+                          Rol:{" "}
+                            <span className="font-medium text-slate-700 dark:text-slate-300">
+                            {cred.label}
+                          </span>
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800">
-                        {cred.email}
-                      </p>
-            <p className="text-xs text-slate-500 capitalize">
-                        Rol: <span className="font-medium text-slate-700">{cred.label}</span>
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-indigo-600 group-hover:translate-x-0.5 transition-transform">
-                    Entrar &rarr;
-                  </span>
-                </button>
-              ))}
+                    <span className="text-xs font-semibold text-indigo-600 transition-transform group-hover:translate-x-0.5 dark:text-indigo-400">
+                      Entrar &rarr;
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
+          )}
       </div>
-    </div>
+    </AuthLayout>
   );
 };
