@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ArrowRight,
   Calendar,
   CheckCircle2,
   Clock3,
@@ -13,14 +14,28 @@ import { Card, CardContent } from "../../components/ui/Card";
 import { cn } from "../../components/ui/cn";
 import { NavLink } from "react-router-dom";
 import { getPatientCases } from "../../services/patientCases";
-import type { PatientCaseCreationStage, PatientCaseFilter, PatientCaseItem, PatientCasesResponse } from "../../types/patientCases";
+import { useAuth } from "../../context/AuthContext";
+import { getPatientCasePath } from "../../utils/patientCaseNavigation";
+import type {
+  PatientCaseCreationStage,
+  PatientCaseFilter,
+  PatientCaseItem,
+  PatientCasesResponse,
+} from "../../types/patientCases";
 
-const filters: Array<{ label: string; status: PatientCaseFilter | null; count: keyof PatientCasesResponse["statusCounts"] }> = [
+const filters: Array<{
+  label: string;
+  status: PatientCaseFilter | null;
+  count: keyof PatientCasesResponse["statusCounts"];
+}> = [
   { label: "Todos", status: null, count: "ALL" },
   { label: "Pendientes", status: "PENDING", count: "PENDING" },
   { label: "En procesamiento", status: "IN_PROGRESS", count: "IN_PROGRESS" },
-  { label: "Resultado disponible", status: "RESULT_AVAILABLE", count: "RESULT_AVAILABLE" },
-  { label: "Finalizados", status: "COMPLETED", count: "COMPLETED" },
+  {
+    label: "Resultado disponible",
+    status: "RESULT_AVAILABLE",
+    count: "RESULT_AVAILABLE",
+  },
 ];
 
 function getStatusConfig(item: PatientCaseItem) {
@@ -30,29 +45,86 @@ function getStatusConfig(item: PatientCaseItem) {
     FILE_PENDING: "Archivo pendiente",
     CONFIRMATION_PENDING: "Confirmación pendiente",
   };
-  if (item.creationStage) return { label: creationStageLabels[item.creationStage], icon: Clock3, variant: "default" as const, action: "Continuar" };
-  if (item.status === "CREATED") return { label: "Caso creado", icon: Clock3, variant: "default" as const, action: "Continuar" };
-  if (item.status === "FILES_RECEIVED") return { label: "Archivos recibidos", icon: CheckCircle2, variant: "neutral" as const, action: "Ver caso" };
-  if (item.status === "RESULT_UPLOADED") return { label: "Resultado cargado", icon: Clock3, variant: "warning" as const, action: "Ver caso" };
-  if (item.status === "RESULT_AVAILABLE" && item.availableResultId) return { label: "Resultado disponible", icon: CheckCircle2, variant: "success" as const, action: "Ver resultado" };
-  return { label: "En procesamiento", icon: Clock3, variant: "warning" as const, action: "Ver caso" };
+  if (item.creationStage)
+    return {
+      label: creationStageLabels[item.creationStage],
+      icon: Clock3,
+      variant: "default" as const,
+      action: "Continuar",
+    };
+  if (item.status === "CREATED")
+    return {
+      label: "Caso creado",
+      icon: Clock3,
+      variant: "default" as const,
+      action: "Continuar",
+    };
+  if (item.status === "FILES_RECEIVED")
+    return {
+      label: "Archivos recibidos",
+      icon: CheckCircle2,
+      variant: "neutral" as const,
+      action: "Ver caso",
+    };
+  if (item.status === "INPUT_CHANGE_DRAFT")
+    return {
+      label: "Solicitud de cambio en edición",
+      icon: Clock3,
+      variant: "default" as const,
+      action: "Continuar cambio",
+    };
+  if (item.status === "INPUT_CHANGE_REVIEW")
+    return {
+      label: "Solicitud de cambio en revisión",
+      icon: Clock3,
+      variant: "warning" as const,
+      action: "Ver caso",
+    };
+  if (item.status === "RESULT_UPLOADED")
+    return {
+      label: "Resultado cargado",
+      icon: Clock3,
+      variant: "warning" as const,
+      action: "Ver caso",
+    };
+  if (item.status === "RESULT_AVAILABLE" && item.availableResultId)
+    return {
+      label: "Resultado disponible",
+      icon: CheckCircle2,
+      variant: "success" as const,
+      action: "Ver resultado",
+    };
+  return {
+    label: "En procesamiento",
+    icon: Clock3,
+    variant: "warning" as const,
+    action: "Ver caso",
+  };
 }
 
 function formatDate(value: string): string {
   return new Intl.DateTimeFormat("es-CO", {
-    day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
     timeZone: "America/Bogota",
   }).format(new Date(value));
 }
 
 export const PatientCasesPage: React.FC = () => {
+  const { user } = useAuth();
   const [query, setQuery] = React.useState("");
   const [debouncedQuery, setDebouncedQuery] = React.useState("");
-  const [activeFilter, setActiveFilter] = React.useState<PatientCaseFilter | null>(null);
+  const [activeFilter, setActiveFilter] =
+    React.useState<PatientCaseFilter | null>(null);
   const [page, setPage] = React.useState(1);
   const [ascending, setAscending] = React.useState(false);
-  const [feedback, setFeedback] = React.useState("");
-  const [response, setResponse] = React.useState<PatientCasesResponse | null>(null);
+  const [response, setResponse] = React.useState<PatientCasesResponse | null>(
+    null,
+  );
   const [error, setError] = React.useState("");
   React.useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedQuery(query), 300);
@@ -63,32 +135,32 @@ export const PatientCasesPage: React.FC = () => {
     setError("");
     setResponse(null);
     if (query !== debouncedQuery) {
-      return () => { active = false; };
+      return () => {
+        active = false;
+      };
     }
     getPatientCases({
       q: debouncedQuery,
       status: activeFilter ?? undefined,
-      sort: ascending ? "createdAt,asc" : "createdAt,desc",
+      sort: ascending ? "createdAt:asc" : "createdAt:desc",
       page: page - 1,
       size: 10,
-    }).then((data) => {
-      if (active) setResponse(data);
-    }).catch(() => {
-      if (active) setError("No se pudieron cargar los casos.");
-    });
-    return () => { active = false; };
+    })
+      .then((data) => {
+        if (active) setResponse(data);
+      })
+      .catch(() => {
+        if (active) setError("No se pudieron cargar los casos.");
+      });
+    return () => {
+      active = false;
+    };
   }, [query, debouncedQuery, activeFilter, ascending, page]);
   const pageCount = response?.totalPages ?? 0;
   const changeFilter = (filter: PatientCaseFilter | null) => {
     setActiveFilter(filter);
     setPage(1);
   };
-  const handleAction = (item: PatientCaseItem) => {
-    setFeedback(
-      `${item.creationStage ? `Continuación desde ${getStatusConfig(item).label.toLowerCase()}` : item.status === "RESULT_AVAILABLE" && item.availableResultId ? "Visualización del resultado" : "Consulta del caso"} preparada para ${item.referenceCode}.`,
-    );
-  };
-
   return (
     <div className="space-y-5">
       <Card>
@@ -101,13 +173,15 @@ export const PatientCasesPage: React.FC = () => {
               Consulta el estado de tus estudios y resultados.
             </p>
           </div>
-          <NavLink
-            to="/mis_casos/nuevo"
-            className="mt-7 inline-flex h-10 items-center gap-2 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 sm:mt-0"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Crear nuevo caso
-          </NavLink>
+          {user?.role === "patient" && (
+            <NavLink
+              to="/mis_casos/nuevo"
+              className="mt-7 inline-flex h-10 items-center gap-2 rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 sm:mt-0"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Crear nuevo caso
+            </NavLink>
+          )}
         </CardContent>
       </Card>
 
@@ -118,7 +192,10 @@ export const PatientCasesPage: React.FC = () => {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 value={query}
-                onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setPage(1);
+                }}
                 placeholder="Buscar por código o estudio"
                 aria-label="Buscar casos"
                 className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-950"
@@ -126,7 +203,10 @@ export const PatientCasesPage: React.FC = () => {
             </label>
             <Button
               variant="outline"
-              onClick={() => { setAscending((current) => !current); setPage(1); }}
+              onClick={() => {
+                setAscending((current) => !current);
+                setPage(1);
+              }}
               className="justify-between lg:w-48"
             >
               Ordenar: {ascending ? "más antiguos" : "más recientes"}{" "}
@@ -138,7 +218,9 @@ export const PatientCasesPage: React.FC = () => {
               <Button
                 key={filter.label}
                 size="sm"
-                variant={activeFilter === filter.status ? "outline" : "secondary"}
+                variant={
+                  activeFilter === filter.status ? "outline" : "secondary"
+                }
                 onClick={() => changeFilter(filter.status)}
                 className={cn(
                   activeFilter === filter.status &&
@@ -169,7 +251,9 @@ export const PatientCasesPage: React.FC = () => {
                   <th className="px-4 py-3">Estudio</th>
                   <th className="px-4 py-3">Fecha</th>
                   <th className="px-4 py-3">Estado</th>
-                  <th className="whitespace-nowrap px-4 py-3">Última actualización</th>
+                  <th className="whitespace-nowrap px-4 py-3">
+                    Última actualización
+                  </th>
                   <th className="px-4 py-3">Acción</th>
                 </tr>
               </thead>
@@ -183,112 +267,110 @@ export const PatientCasesPage: React.FC = () => {
                       No se encontraron casos.
                     </td>
                   </tr>
-                ) : response?.items.map((item) => {
-                  const config = getStatusConfig(item);
-                  const Icon = config.icon;
-                  return (
-                    <tr
-                      key={item.id}
-                      className="border-t border-slate-100 text-sm dark:border-slate-700"
-                    >
-                      <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-800 dark:text-slate-100">
-                        {item.referenceCode}
-                      </td>
-                      <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
-                        <span className="inline-flex items-center gap-2">
-                          <FileText className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
-                          {item.studyName}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
-                        {formatDate(item.createdAt)}
-                      </td>
-                      <td className="px-4 py-4">
-                        <Badge
-                          variant={config.variant}
-                          className="w-fit gap-1.5 border-0"
-                        >
-                          <Icon className="h-3.5 w-3.5" />
-                          {config.label}
-                        </Badge>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-4 text-slate-600 dark:text-slate-300">
-                        {formatDate(item.updatedAt)}
-                      </td>
-                      <td className="px-4 py-4">
-                        {config.action === "Ver caso" ? (
+                ) : (
+                  response?.items.map((item) => {
+                    const config = getStatusConfig(item);
+                    const Icon = config.icon;
+                    return (
+                      <tr
+                        key={item.id}
+                        className="border-t border-slate-100 text-sm dark:border-slate-700"
+                      >
+                        <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-800 dark:text-slate-100">
+                          {item.referenceCode}
+                        </td>
+                        <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
+                          <span className="inline-flex items-center gap-2">
+                            <FileText
+                              className="h-4 w-4 shrink-0 text-slate-400"
+                              aria-hidden="true"
+                            />
+                            {item.studyName}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
+                          {formatDate(item.createdAt)}
+                        </td>
+                        <td className="px-4 py-4">
+                          <Badge
+                            variant={config.variant}
+                            className="w-fit gap-1.5 border-0"
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            {config.label}
+                          </Badge>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-4 text-slate-600 dark:text-slate-300">
+                          {formatDate(item.updatedAt)}
+                        </td>
+                        <td className="px-4 py-4 text-right">
                           <NavLink
-                            to={`/mis_casos/${item.referenceCode}`}
-                            className="inline-flex h-8 w-fit items-center gap-2 rounded-lg px-3 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:text-indigo-300 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200"
+                            to={getPatientCasePath(item.id, item.referenceCode, item.status, item.creationStage)}
+                            aria-label={`${config.action}: ${item.referenceCode}`}
+                            title={`${config.action}: ${item.referenceCode}`}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/50 dark:hover:text-indigo-200"
                           >
-                            <FileText className="h-4 w-4" aria-hidden="true" />
-                            Ver caso
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
                           </NavLink>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleAction(item)}
-                            className="w-fit text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
-                          >
-                            {config.action}
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
-          {!response && !error && <p role="status" className="mt-4 text-sm text-slate-500">Cargando casos…</p>}
-          {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
-          {feedback && (
-            <p
-              role="status"
-              className="mt-4 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-200"
-            >
-              {feedback}
+          {!response && !error && (
+            <p role="status" className="mt-4 text-sm text-slate-500">
+              Cargando casos…
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="mt-4 text-sm text-red-600">
+              {error}
             </p>
           )}
           <div className="flex flex-col gap-3 pt-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
             <span>
-              Mostrando {response?.items.length ?? 0} de {response?.totalItems ?? 0} casos
+              Mostrando {response?.items.length ?? 0} de{" "}
+              {response?.totalItems ?? 0} casos
             </span>
-            {response && response.totalPages > 1 && <div className="flex items-center gap-1">
-              <Button
-                size="icon"
-                variant="outline"
-                disabled={page === 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                aria-label="Página anterior"
-              >
-                ‹
-              </Button>
-              {Array.from({ length: pageCount }, (_, index) => index + 1).map(
-                (number) => (
-                  <Button
-                    key={number}
-                    size="icon"
-                    variant={page === number ? "default" : "outline"}
-                    onClick={() => setPage(number)}
-                  >
-                    {number}
-                  </Button>
-                ),
-              )}
-              <Button
-                size="icon"
-                variant="outline"
-                disabled={page === pageCount}
-                onClick={() =>
-                  setPage((current) => Math.min(pageCount, current + 1))
-                }
-                aria-label="Página siguiente"
-              >
-                ›
-              </Button>
-            </div>}
+            {response && response.totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  disabled={page === 1}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  aria-label="Página anterior"
+                >
+                  ‹
+                </Button>
+                {Array.from({ length: pageCount }, (_, index) => index + 1).map(
+                  (number) => (
+                    <Button
+                      key={number}
+                      size="icon"
+                      variant={page === number ? "default" : "outline"}
+                      onClick={() => setPage(number)}
+                    >
+                      {number}
+                    </Button>
+                  ),
+                )}
+                <Button
+                  size="icon"
+                  variant="outline"
+                  disabled={page === pageCount}
+                  onClick={() =>
+                    setPage((current) => Math.min(pageCount, current + 1))
+                  }
+                  aria-label="Página siguiente"
+                >
+                  ›
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

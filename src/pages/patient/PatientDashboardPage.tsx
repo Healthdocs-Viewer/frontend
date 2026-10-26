@@ -27,6 +27,7 @@ import type {
   NextStepType,
   PatientDashboardResponse,
 } from "../../types/patientDashboard";
+import { getPatientCasePath } from "../../utils/patientCaseNavigation";
 
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat("es-CO", {
@@ -40,10 +41,16 @@ const formatDate = (iso: string) =>
   }).format(new Date(iso));
 const caseStatus: Record<
   PatientDashboardResponse["recentCases"][number]["status"],
-  { label: string; variant: "default" | "info" | "success" }
+  { label: string; variant: "default" | "info" | "success" | "warning" }
 > = {
+  INFORMATION_PENDING: { label: "Información pendiente", variant: "default" },
+  CONSENT_PENDING: { label: "Consentimiento pendiente", variant: "default" },
+  FILE_PENDING: { label: "Archivo pendiente", variant: "default" },
+  CONFIRMATION_PENDING: { label: "Confirmación pendiente", variant: "default" },
   CREATED: { label: "Creado", variant: "default" },
   FILES_RECEIVED: { label: "Archivos recibidos", variant: "info" },
+  INPUT_CHANGE_DRAFT: { label: "Cambio en edición", variant: "warning" },
+  INPUT_CHANGE_REVIEW: { label: "Cambio pendiente de revisión", variant: "warning" },
   ENABLED_FOR_PROCESSING: { label: "En proceso", variant: "info" },
   RESULT_UPLOADED: { label: "Resultado cargado", variant: "info" },
   RESULT_AVAILABLE: { label: "Resultado disponible", variant: "success" },
@@ -58,20 +65,18 @@ const stepIcons: Record<NextStepType, typeof FileText> = {
 };
 const activityStyle: Record<
   ActivityType,
-  { icon: typeof FileText; tone: "emerald" | "indigo" | "blue" | "rose" }
+  { icon: typeof FileText; tone: "emerald" | "indigo" | "blue"; title: string; description: (reference: string) => string }
 > = {
-  CASE_CREATED: { icon: FileText, tone: "indigo" },
-  CONSENT_ACCEPTED: { icon: CheckCircle2, tone: "blue" },
-  FILE_UPLOADED: { icon: FileText, tone: "indigo" },
-  RESULT_PUBLISHED: { icon: CheckCircle2, tone: "emerald" },
-  CASE_STATUS_CHANGED: { icon: FileText, tone: "blue" },
-  NOTIFICATION_SENT: { icon: Bell, tone: "rose" },
-  DOCUMENT_RECEIVED: { icon: Upload, tone: "indigo" },
-  REMINDER_SENT: { icon: Bell, tone: "rose" },
-  RESULT_VIEWED: { icon: CheckCircle2, tone: "emerald" },
-  PERSONAL_DATA_CONFIRMED: { icon: CheckCircle2, tone: "blue" },
-  CASE_ARCHIVED: { icon: CheckCircle2, tone: "emerald" },
-  MEDICAL_ORDER_ADDED: { icon: FileText, tone: "indigo" },
+  CASE_CREATED: { icon: FileText, tone: "indigo", title: "Caso creado", description: (ref) => `Se creó el caso ${ref}.` },
+  CONSENT_ACCEPTED: { icon: CheckCircle2, tone: "blue", title: "Consentimiento aceptado", description: (ref) => `Aceptaste el consentimiento del caso ${ref}.` },
+  FILE_RECEIVED: { icon: Upload, tone: "indigo", title: "Archivo recibido", description: (ref) => `Se recibió un archivo para el caso ${ref}.` },
+  CASE_PROCESSING_ENABLED: { icon: CheckCircle2, tone: "blue", title: "Caso en proceso", description: (ref) => `El caso ${ref} está listo para su procesamiento.` },
+  RESULT_PUBLISHED: { icon: CheckCircle2, tone: "emerald", title: "Resultado disponible", description: (ref) => `El resultado del caso ${ref} está disponible.` },
+  INPUT_CHANGE_OPENED: { icon: FileText, tone: "indigo", title: "Solicitud iniciada", description: (ref) => `Iniciaste una solicitud de cambio para el caso ${ref}.` },
+  INPUT_CHANGE_SUBMITTED: { icon: FileText, tone: "blue", title: "Solicitud enviada", description: (ref) => `Enviaste una solicitud de cambio para el caso ${ref}.` },
+  INPUT_CHANGE_APPROVED: { icon: CheckCircle2, tone: "emerald", title: "Solicitud aprobada", description: (ref) => `Se aprobó la solicitud de cambio del caso ${ref}.` },
+  INPUT_CHANGE_REJECTED: { icon: FileText, tone: "blue", title: "Solicitud revisada", description: (ref) => `La solicitud de cambio del caso ${ref} fue revisada.` },
+  INPUT_CHANGE_CANCELLED: { icon: FileText, tone: "blue", title: "Solicitud cancelada", description: (ref) => `Cancelaste la solicitud de cambio del caso ${ref}.` },
 };
 
 export const PatientDashboardPage = () => {
@@ -167,7 +172,7 @@ export const PatientDashboardPage = () => {
         />
         <Mini
           icon={Bell}
-          value={String(summary.notificationsRequiringAttention)}
+          value={String(summary.notificationsRequiringAttention ?? 0)}
           title="Notificaciones"
           detail="Requieren tu atención"
           color="text-rose-500"
@@ -222,7 +227,12 @@ export const PatientDashboardPage = () => {
                     </td>
                   </tr>
                 )}
-                {visibleRecentCases.map((caseItem) => (
+                {visibleRecentCases.map((caseItem) => {
+                  const status = caseStatus[caseItem.status] ?? {
+                    label: "Estado actualizado",
+                    variant: "default" as const,
+                  };
+                  return (
                   <tr
                     key={caseItem.id}
                     className="h-[65px] border-b border-slate-100 text-slate-600 transition-colors hover:bg-slate-50/70 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/70"
@@ -237,21 +247,21 @@ export const PatientDashboardPage = () => {
                       {formatDate(caseItem.createdAt)}
                     </td>
                     <td className="px-4 py-4">
-                      <Badge variant={caseStatus[caseItem.status].variant}>
-                        {caseStatus[caseItem.status].label}
+                      <Badge variant={status.variant}>
+                        {status.label}
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="font-medium"
+                      <Link
+                        to={getPatientCasePath(caseItem.id, caseItem.referenceCode, caseItem.status)}
+                        className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-300 dark:hover:text-indigo-300"
                       >
                         Ver
-                      </Button>
+                      </Link>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
                 {Array.from({
                   length: Math.max(
                     0,
@@ -293,6 +303,9 @@ export const PatientDashboardPage = () => {
                       caseId={step.caseReferenceCode}
                       description={step.description}
                       action={step.action.label}
+                      to={step.type === "ACCEPT_CONSENT" || step.type === "UPLOAD_FILE"
+                        ? `/mis_casos/${step.caseId}/edit`
+                        : `/mis_casos/${step.caseReferenceCode}`}
                       active={step.priority === "HIGH"}
                       success={
                         step.type === "VIEW_RESULT" ||
@@ -323,14 +336,20 @@ export const PatientDashboardPage = () => {
               <div className="absolute bottom-7 left-[11px] top-4 w-px bg-slate-200 dark:bg-slate-700" />
               <div className="space-y-4">
                 {recentActivity.slice(0, 5).map((item) => (
-                  <ActivityItem
+                  <Link
                     key={item.id}
-                    icon={activityStyle[item.type].icon}
-                    tone={activityStyle[item.type].tone}
-                    title={item.title}
-                    description={item.description}
-                    date={formatDate(item.occurredAt)}
-                  />
+                    to={`/mis_casos/${encodeURIComponent(item.caseReferenceCode)}`}
+                    aria-label={`${activityStyle[item.type].title}: ${item.caseReferenceCode}`}
+                    className="block rounded-md transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:bg-slate-800/60"
+                  >
+                    <ActivityItem
+                      icon={activityStyle[item.type].icon}
+                      tone={activityStyle[item.type].tone}
+                      title={activityStyle[item.type].title}
+                      description={activityStyle[item.type].description(item.caseReferenceCode)}
+                      date={formatDate(item.occurredAt)}
+                    />
+                  </Link>
                 ))}
               </div>
             </div>
