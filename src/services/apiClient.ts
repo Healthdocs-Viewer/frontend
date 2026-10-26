@@ -1,6 +1,7 @@
 import {
   AcceptConsentRequest,
   CaseSummary,
+  CaseDetails,
   CompleteUploadResponse,
   ConsentRecord,
   CreateCaseRequest,
@@ -15,6 +16,14 @@ import {
   UploadIntent,
   UserProfile,
 } from "../types/api";
+import type { PatientCasesQuery, PatientCasesResponse } from "../types/patientCases";
+import type { PatientDashboardResponse } from "../types/patientDashboard";
+import type { NotificationItem, NotificationsQuery, NotificationsResponse } from "../types/notifications";
+import type { CoordinatorAcademicCaseDetail, CoordinatorAcademicCasesQuery, CoordinatorAcademicCasesResponse, CoordinatorInputChangeRequestSummary, ResearcherAcademicCaseDetail } from "../types/academicCases";
+import type { StudentAuthorizationStatus } from "../types/academicStudents";
+import type { PatientInputChangeRequest } from "../types/patientCaseDetail";
+import type { ResearcherResultsResponse } from "../types/researcherResults";
+import type { CoordinatorResultsResponse } from "../types/coordinatorResults";
 import { mockBackendService, MockHttpError } from "./mockApi";
 import { authService, clearStoredToken, getStoredToken, setStoredToken } from "./authService";
 
@@ -68,8 +77,12 @@ const API_BASE_URL = "/api/v1";
  * - Lanza ErrorResponse tipado para el resto de errores HTTP.
  * - Propaga errores de red sin tratarlos como errores de autenticación.
  */
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = await authService.getToken();
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  tokenOverride?: string | null,
+): Promise<T> {
+  const token = tokenOverride === undefined ? await authService.getToken() : tokenOverride;
   const headers = new Headers(options.headers || {});
 
   headers.set("Accept", "application/json");
@@ -134,6 +147,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         traceId: "trace-err",
       };
     }
+    errData.status = res.status;
     throw errData;
   }
 
@@ -186,13 +200,59 @@ export const apiClient = {
   },
 
   patient: {
-    async createCase(req: CreateCaseRequest): Promise<CaseSummary> {
+    async getCases(query: PatientCasesQuery = {}): Promise<PatientCasesResponse> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) {
+        try {
+          return await mockBackendService.getPatientCases(token, query);
+        } catch (err: any) {
+          if (err instanceof MockHttpError) {
+            if (err.status === 401) notifyUnauthorized();
+            if (err.status === 403) notifyForbidden(err.message);
+          }
+          throw err;
+        }
+      }
+      const params = new URLSearchParams({
+        q: query.q?.trim() ?? "",
+        status: query.status ?? "ALL",
+        sort: query.sort ?? "createdAt:desc",
+        page: String(query.page ?? 0),
+        size: String(query.size ?? 10),
+      });
+      return request<PatientCasesResponse>(`/cases?${params.toString()}`);
+    },
+
+    async getDashboard(): Promise<PatientDashboardResponse> {
+      return request<PatientDashboardResponse>("/patient/dashboard");
+    },
+
+    async getNotifications(query: NotificationsQuery = {}): Promise<NotificationsResponse> {
+      const params = new URLSearchParams({
+        page: String(query.page ?? 0),
+        size: String(query.size ?? 20),
+      });
+      return request<NotificationsResponse>(`/notifications?${params.toString()}`);
+    },
+
+    async markNotificationRead(notificationId: string): Promise<NotificationItem> {
+      return request<NotificationItem>(
+        `/notifications/${encodeURIComponent(notificationId)}/read`,
+        { method: "POST" },
+      );
+    },
+
+    async createCase(
+      req: CreateCaseRequest,
+      idempotencyKey: string = crypto.randomUUID(),
+    ): Promise<CaseSummary> {
       const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
 
       if (isMockMode()) {
         try {
-          return await mockBackendService.createCase(token, req);
+          return await mockBackendService.createCase(token, req, idempotencyKey);
         } catch (err: any) {
           if (err instanceof MockHttpError) {
             if (err.status === 401) notifyUnauthorized();
@@ -204,8 +264,44 @@ export const apiClient = {
 
       return request<CaseSummary>("/cases", {
         method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
         body: JSON.stringify(req),
       });
+    },
+
+    async getCaseDetails(caseId: string): Promise<CaseDetails> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) {
+        try {
+          return await mockBackendService.getCaseDetails(token, caseId);
+        } catch (err: any) {
+          if (err instanceof MockHttpError) {
+            if (err.status === 401) notifyUnauthorized();
+            if (err.status === 403) notifyForbidden(err.message);
+          }
+          throw err;
+        }
+      }
+      return request<CaseDetails>(`/cases/${caseId}`);
+    },
+
+    async submitCase(caseId: string): Promise<void> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) {
+        try {
+          await mockBackendService.submitCase(token, caseId);
+        } catch (err: any) {
+          if (err instanceof MockHttpError) {
+            if (err.status === 401) notifyUnauthorized();
+            if (err.status === 403) notifyForbidden(err.message);
+          }
+          throw err;
+        }
+        return;
+      }
+      return request<void>(`/cases/${caseId}/submission`, { method: "POST" });
     },
 
     async acceptConsent(
@@ -249,7 +345,33 @@ export const apiClient = {
         }
       }
 
-      return request<CaseSummary[]>("/cases");
+      const response = await request<CaseSummary[] | { items: CaseSummary[] }>("/cases?size=100");
+      return Array.isArray(response) ? response : response.items;
+    },
+
+    async listMyCaseInputFiles(caseId: string): Promise<FileSummary[]> {
+      return request<FileSummary[]>(`/cases/${caseId}/uploads`);
+    },
+
+    async createInputDownload(caseId: string, fileId: string): Promise<DownloadIntent> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+
+      if (isMockMode()) {
+        try {
+          return await mockBackendService.createPatientInputDownload(token, caseId, fileId);
+        } catch (err: any) {
+          if (err instanceof MockHttpError) {
+            if (err.status === 401) notifyUnauthorized();
+            if (err.status === 403) notifyForbidden(err.message);
+          }
+          throw err;
+        }
+      }
+
+      return request<DownloadIntent>(`/cases/${caseId}/uploads/${fileId}/download`, {
+        method: "POST",
+      });
     },
 
     async createInputUpload(
@@ -277,6 +399,63 @@ export const apiClient = {
       });
     },
 
+    async listInputChangeRequests(caseId: string): Promise<PatientInputChangeRequest[]> {
+      return request<PatientInputChangeRequest[]>(`/cases/${caseId}/input-change-requests`);
+    },
+
+    async openInputChangeRequest(caseId: string): Promise<PatientInputChangeRequest> {
+      return request<PatientInputChangeRequest>(`/cases/${caseId}/input-change-requests`, {
+        method: "POST",
+      });
+    },
+
+    async updateInputChangeReason(
+      caseId: string,
+      requestId: string,
+      reason: string,
+    ): Promise<PatientInputChangeRequest> {
+      return request<PatientInputChangeRequest>(
+        `/cases/${caseId}/input-change-requests/${requestId}`,
+        { method: "PATCH", body: JSON.stringify({ reason }) },
+      );
+    },
+
+    async createInputChangeUpload(
+      caseId: string,
+      requestId: string,
+      req: CreateUploadIntentRequest,
+    ): Promise<UploadIntent> {
+      return request<UploadIntent>(
+        `/cases/${caseId}/input-change-requests/${requestId}/uploads`,
+        { method: "POST", body: JSON.stringify(req) },
+      );
+    },
+
+    async removeInputChangeFile(
+      caseId: string,
+      requestId: string,
+      fileId: string,
+    ): Promise<void> {
+      return request<void>(
+        `/cases/${caseId}/input-change-requests/${requestId}/files/${fileId}`,
+        { method: "DELETE" },
+      );
+    },
+
+    async submitInputChangeRequest(caseId: string, requestId: string): Promise<void> {
+      return request<void>(
+        `/cases/${caseId}/input-change-requests/${requestId}/submission`,
+        { method: "POST" },
+      );
+    },
+
+    async cancelInputChangeRequest(caseId: string, requestId: string): Promise<void> {
+      return request<void>(
+        `/cases/${caseId}/input-change-requests/${requestId}/cancellation`,
+        { method: "POST" },
+      );
+    },
+
     async getPatientResult(caseId: string): Promise<PatientResult> {
       const token = await authService.getToken();
 
@@ -297,6 +476,36 @@ export const apiClient = {
   },
 
   files: {
+    async uploadInputBinary(uploadUrl: string, fileId: string, file: File): Promise<void> {
+      if (isMockMode()) {
+        const token = await authService.getToken();
+        if (!token) throw new Error("No autenticado");
+        try {
+          await mockBackendService.uploadInputFile(token, fileId, file);
+        } catch (err: any) {
+          if (err instanceof MockHttpError) {
+            if (err.status === 401) notifyUnauthorized();
+            if (err.status === 403) notifyForbidden(err.message);
+          }
+          throw err;
+        }
+        return;
+      }
+
+      const response = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      if (!response.ok) {
+        throw {
+          status: response.status,
+          code: `UPLOAD_HTTP_${response.status}`,
+          message: response.statusText || "No se pudo cargar el archivo.",
+        };
+      }
+    },
+
     async completeUpload(fileId: string): Promise<CompleteUploadResponse> {
       const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
@@ -313,13 +522,25 @@ export const apiClient = {
         }
       }
 
-      return request<CompleteUploadResponse>(`/files/${fileId}/complete`, {
-        method: "POST",
-      });
+      // Reuse the token checked above. This avoids a second session lookup
+      // between the upload intent and confirmation (notably during refresh).
+      return request<CompleteUploadResponse>(
+        `/files/${fileId}/complete`,
+        { method: "POST" },
+        token,
+      );
     },
   },
 
   internal: {
+    async listResults(page = 0, size = 100): Promise<ResearcherResultsResponse> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+
+      const query = new URLSearchParams({ page: String(page), size: String(size) });
+      return request<ResearcherResultsResponse>(`/internal/results?${query.toString()}`);
+    },
+
     async listAssignedCases(): Promise<InternalCaseSummary[]> {
       const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");
@@ -337,6 +558,25 @@ export const apiClient = {
       }
 
       return request<InternalCaseSummary[]>("/internal/cases");
+    },
+
+    async getAssignedCaseDetail(caseId: string): Promise<ResearcherAcademicCaseDetail> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+
+      if (isMockMode()) {
+        try {
+          return await mockBackendService.getAssignedCaseDetail(token, caseId);
+        } catch (err: any) {
+          if (err instanceof MockHttpError) {
+            if (err.status === 401) notifyUnauthorized();
+            if (err.status === 403) notifyForbidden(err.message);
+          }
+          throw err;
+        }
+      }
+
+      return request<ResearcherAcademicCaseDetail>(`/internal/cases/${caseId}`);
     },
 
     async createInputDownload(
@@ -383,13 +623,14 @@ export const apiClient = {
       );
     },
 
-    async deleteResult(caseId: string, resultId: string): Promise<void> {
+    async deleteResult(caseId: string, resultId: string, reason = "Retirado por el investigador"): Promise<void> {
       if (isMockMode()) {
         const token = await authService.getToken();
         if (!token) throw new Error("No autenticado");
-        return mockBackendService.deleteResult(token, caseId, resultId);
+        return mockBackendService.deleteResult(token, caseId, resultId, reason);
       }
-      return request<void>(`/internal/cases/${caseId}/results/${resultId}`, {
+      const query = new URLSearchParams({ reason });
+      return request<void>(`/internal/cases/${caseId}/results/${resultId}?${query.toString()}`, {
         method: "DELETE",
       });
     },
@@ -425,6 +666,147 @@ export const apiClient = {
   },
 
   operations: {
+    async listCoordinatorResults(page = 0, size = 100): Promise<CoordinatorResultsResponse> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) {
+        const { getCoordinatorResultsMock } = await import("./coordinatorResults");
+        return getCoordinatorResultsMock();
+      }
+      const params = new URLSearchParams({
+        sort: "uploadedAt,desc",
+        page: String(page),
+        size: String(size),
+      });
+      return request<CoordinatorResultsResponse>(`/operations/results?${params.toString()}`);
+    },
+
+    async listPendingInputChangeRequests(): Promise<CoordinatorInputChangeRequestSummary[]> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) return [];
+      return request<CoordinatorInputChangeRequestSummary[]>("/operations/input-change-requests");
+    },
+
+    async getInputChangeRequestForReview(requestId: string): Promise<PatientInputChangeRequest> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) throw new Error("No hay solicitudes de cambio de prueba para revisar en modo mock.");
+      return request<PatientInputChangeRequest>(`/operations/input-change-requests/${requestId}`);
+    },
+
+    async createInputChangeReviewDownload(requestId: string, fileId: string): Promise<{ downloadUrl: string; expiresAt: string }> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) throw new Error("La descarga de archivos de revisión requiere conexión con el backend.");
+      return request<{ downloadUrl: string; expiresAt: string }>(`/operations/input-change-requests/${requestId}/files/${fileId}/download`, {
+        method: "POST",
+      });
+    },
+
+    async approveInputChangeRequest(requestId: string): Promise<void> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) throw new Error("La decisión de solicitudes de cambio requiere conexión con el backend.");
+      return request<void>(`/operations/input-change-requests/${requestId}/approval`, { method: "POST" });
+    },
+
+    async rejectInputChangeRequest(requestId: string, reason: string): Promise<void> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) throw new Error("La decisión de solicitudes de cambio requiere conexión con el backend.");
+      return request<void>(`/operations/input-change-requests/${requestId}/rejection`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    async publishAcademicCaseResult(resultId: string): Promise<void> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) {
+        const { publishCoordinatorResultMock } = await import("./academicCases");
+        return publishCoordinatorResultMock(resultId);
+      }
+      return request<void>(`/operations/results/${resultId}/availability`, { method: "POST" });
+    },
+
+    async requestAcademicResultCorrection(resultId: string, reason: string): Promise<void> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+      if (isMockMode()) {
+        const { requestCoordinatorResultCorrectionMock } = await import("./academicCases");
+        return requestCoordinatorResultCorrectionMock(resultId, reason);
+      }
+      return request<void>(`/operations/results/${resultId}/correction-requests`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+    },
+
+    async getAcademicCaseDetail(caseId: string): Promise<CoordinatorAcademicCaseDetail> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+
+      if (isMockMode()) {
+        const { getCoordinatorAcademicCaseDetailMock } = await import("./academicCases");
+        return getCoordinatorAcademicCaseDetailMock(caseId);
+      }
+
+      return request<CoordinatorAcademicCaseDetail>(`/operations/cases/academic/${caseId}`);
+    },
+
+    async getAcademicCases(query: CoordinatorAcademicCasesQuery = {}): Promise<CoordinatorAcademicCasesResponse> {
+      const token = await authService.getToken();
+      if (!token) throw new Error("No autenticado");
+
+      if (isMockMode()) {
+        const { getAcademicCasesMock } = await import("./academicCases");
+        return getAcademicCasesMock(query);
+      }
+
+      const params = new URLSearchParams({
+        q: query.q?.trim() ?? "",
+        sort: query.sort ?? "receivedAt,desc",
+        page: String(query.page ?? 0),
+        size: String(query.size ?? 8),
+      });
+      if (query.status) params.set("status", query.status);
+      return request<CoordinatorAcademicCasesResponse>(`/operations/cases/academic?${params.toString()}`);
+    },
+
+    async searchResearchers(query: string, status: StudentAuthorizationStatus, page = 0, size = 100) {
+      const params = new URLSearchParams({ q: query, status, sort: "name,asc", page: String(page), size: String(size) });
+      return request<{
+        summary: { totalResearchers: number; authorizedResearchers: number; totalAssignedCases: number };
+        items: Array<{ userId: string; researcherCode: string; fullName: string; email: string; authorizationStatus: StudentAuthorizationStatus; assignedCaseCount: number }>;
+        page: number;
+        size: number;
+        totalItems: number;
+        totalPages: number;
+        appliedFilters: { q: string; status: StudentAuthorizationStatus | null; sort: string };
+      }>(`/operations/researchers?${params.toString()}`);
+    },
+
+    async getCaseAssignments(caseId: string) {
+      return request<{
+        caseId: string;
+        researcherIds: string[];
+        researchers: Array<{ userId: string; researcherCode: string; fullName: string; email: string; authorizationStatus: StudentAuthorizationStatus; assignedCaseCount: number }>;
+      }>(`/operations/cases/${caseId}/assignments`);
+    },
+
+    async replaceCaseAssignments(caseId: string, researcherIds: string[]) {
+      return request<{
+        caseId: string;
+        researcherIds: string[];
+        researchers: Array<{ userId: string; researcherCode: string; fullName: string; email: string; authorizationStatus: StudentAuthorizationStatus; assignedCaseCount: number }>;
+      }>(`/operations/cases/${caseId}/assignments`, {
+        method: "PUT",
+        body: JSON.stringify({ researcherIds }),
+      });
+    },
+
     async listPendingCases(): Promise<InternalCaseSummary[]> {
       const token = await authService.getToken();
       if (!token) throw new Error("No autenticado");

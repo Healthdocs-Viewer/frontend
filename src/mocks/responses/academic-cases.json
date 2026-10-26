@@ -5,6 +5,7 @@
     "studyName": "Radiografía de tórax",
     "status": "ENABLED_FOR_PROCESSING",
     "createdAt": "2026-09-21T14:32:00Z",
+    "updatedAt": "2026-09-21T14:32:00Z",
     "files": [
       {
         "id": "650e8400-e29b-41d4-a716-446655440101",
@@ -22,6 +23,7 @@
     "studyName": "Resonancia de rodilla",
     "status": "RESULT_UPLOADED",
     "createdAt": "2026-09-20T10:15:00Z",
+    "updatedAt": "2026-09-21T16:20:00Z",
     "files": [
       {
         "id": "650e8400-e29b-41d4-a716-446655440102",
@@ -53,6 +55,7 @@
     "studyName": "Tomografía de abdomen",
     "status": "ENABLED_FOR_PROCESSING",
     "createdAt": "2026-09-19T09:48:00Z",
+    "updatedAt": "2026-09-19T09:48:00Z",
     "files": [
       {
         "id": "650e8400-e29b-41d4-a716-446655440103",
@@ -70,6 +73,7 @@
     "studyName": "Ecografía abdominal",
     "status": "RESULT_UPLOADED",
     "createdAt": "2026-09-18T16:12:00Z",
+    "updatedAt": "2026-09-19T08:45:00Z",
     "files": [
       {
         "id": "650e8400-e29b-41d4-a716-446655440104",
@@ -101,6 +105,7 @@
     "studyName": "Mamografía bilateral",
     "status": "RESULT_AVAILABLE",
     "createdAt": "2026-09-16T13:05:00Z",
+    "updatedAt": "2026-09-17T10:00:00Z",
     "files": [
       {
         "id": "650e8400-e29b-41d4-a716-446655440105",
@@ -132,6 +137,7 @@
     "studyName": "Radiografía de columna",
     "status": "RESULT_AVAILABLE",
     "createdAt": "2026-09-15T09:26:00Z",
+    "updatedAt": "2026-09-16T15:00:00Z",
     "files": [
       {
         "id": "650e8400-e29b-41d4-a716-446655440106",

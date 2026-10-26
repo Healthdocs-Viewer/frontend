@@ -1,8 +1,7 @@
 export type ResearcherResultStatus =
   | "UPLOADED"
   | "AVAILABLE"
-  | "CORRECTION_REQUIRED"
-  | "DELETED";
+  | "CORRECTION_REQUIRED";
 
 export type ResearcherResultSortField =
   | "originalFilename"
@@ -18,20 +17,20 @@ export type ResearcherResultSort =
 export interface ResearcherResultItem {
   id: string;
   originalFilename: string;
-  contentType: string;
-  sizeBytes: number;
+  contentType: string | null;
+  sizeBytes: number | null;
   case: {
     id: string;
     referenceCode: string;
     studyName: string;
   };
   status: ResearcherResultStatus;
-  uploadedAt: string;
-  updatedAt: string;
+  uploadedAt: string | null;
+  updatedAt: string | null;
+  version: number;
+  publicationType: "INITIAL" | "CORRECTED" | null;
+  correctionRequest: string | null;
   availableAt: string | null;
-  deletedAt: string | null;
-  deletedBy: string | null;
-  deletionReason: string | null;
 }
 
 export interface ResearcherResultsResponse {
@@ -41,7 +40,6 @@ export interface ResearcherResultsResponse {
     uploaded: number;
     available: number;
     correctionRequired: number;
-    deleted: number;
   };
   page: number;
   size: number;

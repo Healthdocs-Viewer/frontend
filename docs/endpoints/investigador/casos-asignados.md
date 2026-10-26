@@ -1,18 +1,18 @@
 # Contrato de datos: Casos asignados
 
-Documento de trabajo para la vista `/casos_asignados`, usada en el espacio de trabajo de docencia por investigadores y coordinadores con acceso interno. Registra lo que la tabla muestra, el endpoint de backend existente y los campos/estados que aún deben definirse. Las propuestas no sustituyen el OpenAPI canónico hasta que se acuerden e incorporen allí.
+Contrato de integración de la vista `/casos_asignados`, usada por investigadores. La vista obtiene el listado del endpoint interno y realiza en el navegador la búsqueda, los filtros, el orden y la paginación.
 
 ## Qué muestra la interfaz
 
 - Título «Casos Académicos» y una tabla de casos asignados.
-- Búsqueda por identificador de caso y investigador asignado.
-- Filtros por todos, asignado, en procesamiento, resultado cargado, corrección requerida y disponible para el paciente. Cada filtro tiene contador.
+- Búsqueda por identificador de caso (`referenceCode`).
+- Filtros por los estados del listado. Cada filtro tiene contador.
 - Columnas: identificador del caso, fecha de recepción, estado, última actualización y acciones.
 - Orden ascendente/descendente por fecha de recepción.
 - Paginación de ocho casos por página.
-- Acción «Ver detalle», que abre `/casos_academicos/:referenceCode`.
+- Acción «Ver detalle», que abre `/casos_asignados/:referenceCode`.
 
-La pantalla filtra los casos «Sin asignar» y solo presenta casos asignados. Por el momento usa datos locales de demostración; no consulta el API.
+La ruta obtiene todos los casos asignados al usuario autenticado. La búsqueda, los contadores, los filtros, el orden por fecha de recepción y las páginas de ocho elementos se calculan localmente sobre esa lista completa.
 
 ## Endpoint existente
 
@@ -23,7 +23,7 @@ GET /api/v1/internal/cases
 Authorization: Bearer <token>
 ```
 
-El backend determina el usuario y su rol desde el token. Devuelve una lista JSON (sin paginación, búsqueda ni filtros de servidor) de casos asignados al usuario con estado `ENABLED_FOR_PROCESSING`, `RESULT_UPLOADED` o `RESULT_AVAILABLE`.
+El backend restringe este endpoint al rol `RESEARCHER`, valida que la cuenta esté habilitada y determina el usuario desde el token. Devuelve una lista JSON de todos los casos asignados al investigador en los estados `FILES_RECEIVED`, `INPUT_CHANGE_DRAFT`, `INPUT_CHANGE_REVIEW`, `ENABLED_FOR_PROCESSING`, `RESULT_UPLOADED` y `RESULT_AVAILABLE`. El endpoint no recibe parámetros de búsqueda, filtros, orden ni paginación; esas operaciones se hacen localmente en el frontend.
 
 ### Respuesta actual del backend
 
@@ -64,9 +64,9 @@ Cuando el caso tenga un resultado cargado, `result` puede ser:
 
 `id` es el UUID técnico del caso y debe usarse en las operaciones de API; `referenceCode` es el identificador legible que se muestra en la tabla y se usa en la dirección de detalle. `studyName` es el nombre de estudio libre compartido por las vistas. `createdAt` es el instante de creación/recepción del caso; el frontend lo formatea en hora local, por ejemplo `21/9/2026, 14:32`.
 
-## Ajuste necesario para cubrir la tabla
+## Campos de la tabla
 
-La respuesta actual puede alimentar el identificador, la fecha de recepción y el estado básico, pero faltan campos que usa la interfaz de demostración. Si la tabla mantiene la columna «Última actualización», se propone añadir `updatedAt` al objeto de caso:
+La respuesta alimenta el identificador (`referenceCode`), la fecha de recepción (`createdAt`), el estado y la última actualización (`updatedAt`). Ambas fechas se envían como instantes ISO 8601 en UTC; el frontend las presenta en hora local. Si `updatedAt` es nulo o no está disponible en una respuesta antigua, la tabla muestra «—».
 
 ```json
 {
@@ -81,7 +81,7 @@ La respuesta actual puede alimentar el identificador, la fecha de recepción y e
 }
 ```
 
-Las fechas deben seguir siendo ISO 8601 en UTC en el API; no enviar el texto localizado ya formateado. El listado actual tampoco entrega datos del investigador asignado. Para mostrar/buscar por investigador, solo deben añadirse los datos de asignación que correspondan al alcance del usuario, por ejemplo:
+Las fechas deben seguir siendo ISO 8601 en UTC en el API; no enviar el texto localizado ya formateado. El listado no entrega datos del investigador asignado y la vista actual no busca por investigador. Si ese requisito se incorpora, habrá que añadir al contrato los datos de asignación que correspondan al alcance del usuario, por ejemplo:
 
 ```json
 "assignees": [
@@ -99,15 +99,18 @@ Para una vista de investigador, el usuario actual ya es el asignado y no haría 
 
 | Estado de API | Etiqueta de interfaz | Situación |
 | --- | --- | --- |
+| `FILES_RECEIVED` | Archivos recibidos | Archivos del caso recibidos; aún no habilitado para procesamiento. |
+| `INPUT_CHANGE_DRAFT` | Cambio en edición | Solicitud de cambio de archivos en edición. |
+| `INPUT_CHANGE_REVIEW` | Cambio pendiente de revisión | Solicitud de cambio de archivos enviada para revisión. |
 | `ENABLED_FOR_PROCESSING` | En procesamiento | Caso asignado y habilitado para trabajo interno. |
-| `RESULT_UPLOADED` | Resultado cargado | Se cargó un resultado, pendiente de disponibilidad al paciente. |
-| `RESULT_AVAILABLE` | Disponible para el paciente | El resultado ya fue publicado. |
+| `RESULT_UPLOADED` | Resultado en revisión | Se cargó un resultado, pendiente de publicación por coordinación al propietario del caso. |
+| `RESULT_AVAILABLE` | Disponible para el propietario | El resultado ya fue publicado. |
 
-La UI de demostración también presenta «Asignado», «Corrección requerida» y «Sin asignar». El endpoint actual no devuelve casos sin asignar y el modelo de estados no permite distinguir «Asignado» de «En procesamiento» ni expresa «Corrección requerida». No mapear dos conceptos distintos al mismo estado sin una decisión de producto. Si esos estados deben aparecer aquí, hay que acordar su significado y persistencia en el backend.
+Los filtros y etiquetas de la vista corresponden a los estados de caso enumerados arriba. «Sin asignar» no forma parte del listado personal del investigador. «Corrección requerida» es un estado de resultado, no uno de los estados de caso que devuelve este endpoint.
 
 ## Paginación, búsqueda y orden
 
-Hoy el backend devuelve todos los casos asignados en un arreglo; búsqueda, filtro, ordenamiento y paginación son responsabilidades locales del frontend. Si el volumen de casos lo requiere, se puede evolucionar el endpoint para aceptar:
+El contrato devuelve la lista completa y la vista resuelve búsqueda, filtro, orden y paginación en el frontend. Si el volumen requiere paginación de servidor, se debe cambiar el contrato y la vista para usarla de extremo a extremo; el cliente no debe combinar una página del servidor con una segunda paginación local. Una posible evolución sería:
 
 ```http
 GET /api/v1/internal/cases?q=CAS-2026&status=RESULT_UPLOADED&sort=createdAt,desc&page=0&size=8
@@ -130,28 +133,41 @@ Y devolver un sobre paginado:
 }
 ```
 
-El cambio a paginación de servidor es opcional mientras el listado sea pequeño; el cliente no debe combinar `page` local con paginación del servidor.
+Por ahora no se envían esos parámetros y el frontend conserva las operaciones locales.
 
 ## Navegación al detalle
 
-El detalle académico se abre con `/casos_academicos/{referenceCode}`. La tabla debe conservar también `id` (UUID) para las llamadas al API. En la implementación de demostración `item.id` contiene un código `CAS-...`; al integrar el API, separar los dos campos y resolver las direcciones directas según [la decisión de identificadores](../casos/identificadores-y-rutas.md).
+El detalle del investigador se abre con `/casos_asignados/{referenceCode}`. El frontend resuelve el UUID desde la lista asignada y carga los metadatos, archivos, resultados y personas asignadas con `GET /api/v1/internal/cases/{caseId}`. Este endpoint solo permite consultar los casos asignados al investigador; la vista informa quiénes están asignados, pero no permite gestionarlos. La vista de coordinación continúa usando `/casos_academicos/{referenceCode}`.
+
+El detalle incluye `researchers`, la lista de investigadores habilitados asignados al mismo caso, con nombre, código, estado de autorización y fecha de asignación. Se presenta como información de acceso; esta vista no permite modificar las asignaciones.
+
+La carga de resultados solo se habilita cuando el estado es `ENABLED_FOR_PROCESSING`. Se bloquea mientras una solicitud de cambio está en edición o revisión, mientras un resultado espera revisión (`RESULT_UPLOADED`) y cuando ya está publicado (`RESULT_AVAILABLE`). Las decisiones de solicitudes de cambio, publicación y gestión de investigadores siguen siendo acciones de coordinación.
+
+## Ciclo del resultado desde el detalle
+
+El investigador asignado inicia la carga desde el detalle. El frontend crea una intención con `POST /api/v1/internal/cases/{caseId}/result-uploads`, sube el archivo a la URL temporal y completa la carga mediante `POST /api/v1/files/{fileId}/complete`. El resultado confirmado queda `UPLOADED` y el caso `RESULT_UPLOADED`; coordinación decide si lo publica o solicita corrección.
+
+Si el resultado `UPLOADED` requiere reemplazo o retiro, el investigador debe enviar un motivo a `DELETE /api/v1/internal/cases/{caseId}/results/{resultId}?reason=...`. La operación es una baja lógica: conserva auditoría e historial, y devuelve el caso a `ENABLED_FOR_PROCESSING`. Para reemplazarlo, luego se inicia una nueva carga; no existe reemplazo directo en una sola llamada. Un resultado `AVAILABLE` no se elimina desde el investigador.
+
+Cuando coordinación solicita corrección de un resultado publicado, el resultado pasa a `CORRECTION_REQUIRED`, el caso vuelve a `ENABLED_FOR_PROCESSING` y el propietario deja de tener acceso al resultado. El detalle del investigador muestra el motivo y permite cargar una nueva versión. La nueva versión vuelve a `UPLOADED`/`RESULT_UPLOADED` y requiere publicación de coordinación como `CORRECTED`.
+
+El backend también ofrece `GET /api/v1/internal/cases/{caseId}/results/history` para consultar el historial. La lista plana `GET /api/v1/internal/results` devuelve todos los resultados permitidos al investigador autenticado; actualmente no pagina en servidor.
+
+### Limitaciones de implementación conocidas
+
+- Aunque la intención devuelve `expiresAt`, el backend no persiste ni valida el vencimiento al completar la carga. El contrato requiere rechazar una confirmación vencida; falta implementar esa validación.
+- El tipo `INITIAL` o `CORRECTED` no debe inferirse solo del número de versión. Hoy, tras borrar una primera carga aún no publicada, una nueva versión puede clasificarse como `CORRECTED` sin que haya existido publicación previa.
+- Si el navegador no informa el MIME del archivo, el formulario solo reconoce como fallback PDF y MP4. Otros formatos admitidos, como DICOM o ZIP, pueden recibir un MIME erróneo y ser rechazados.
+- El mock de resultados no reproduce de forma completa las restricciones por rol, asignación y estado del backend; su eliminación física tampoco conserva el historial auditable.
 
 ## Brechas actuales
 
-- El componente de `/casos_asignados` usa datos locales y el backend ya ofrece `GET /api/v1/internal/cases`.
-- El backend entrega `createdAt`, pero no `updatedAt` en su objeto de caso; se necesita ese dato para poblar la última actualización.
-- No entrega nombre/código de investigadores asignados para la búsqueda que anuncia la UI.
-- Los filtros «Sin asignar» y «Corrección requerida» no corresponden a los estados/listado actuales.
-- La interfaz tiene un estado «Asignado» que no se distingue de `ENABLED_FOR_PROCESSING` en el dominio actual.
-- La pantalla tiene paginación/orden/búsqueda local; el endpoint no ofrece aún esos parámetros.
-- Aunque la tabla presenta un control de orden en “Última actualización”, el cálculo local sigue ordenando por fecha de recepción. El control de la segunda columna no cambia el campo de orden; corregir la interfaz o documentar solo orden por una columna.
-- La ruta `/casos_asignados` está protegida por el guard de rol investigador en `AppRoutes`; el backend debe validar también el rol, la cuenta y las asignaciones.
+- La vista consume `GET /api/v1/internal/cases`; búsqueda, filtros, orden y paginación operan sobre la lista completa en el frontend.
+- El endpoint entrega `updatedAt`; la tabla lo muestra y conserva «—» como respaldo si viene nulo.
+- La búsqueda se limita a `referenceCode`; la respuesta no incluye investigadores asignados.
+- El control de orden cambia el orden por fecha de recepción.
+- La ruta y el endpoint están restringidos al rol investigador; el backend también valida que la cuenta esté habilitada y aplica el alcance de asignaciones del usuario autenticado.
 
-## Decisiones pendientes
+## Decisión pendiente
 
-1. Confirmar si `/casos_asignados` es solo para investigador, solo coordinador o compartida. El menú la ubica bajo “Investigadores” y el endpoint admite usuarios internos; las rutas de `AppRoutes` no tienen actualmente guard de rol para esta sección.
-2. Decidir si la tabla necesita mostrar al investigador asignado. Para un investigador autenticado, suele ser redundante; para el coordinador puede ser necesario.
-3. Definir qué evento actualiza `updatedAt` y exponerlo desde el backend.
-4. Acordar si la pantalla debe incluir casos sin asignar; el endpoint existente lista únicamente casos asignados al usuario autenticado.
-5. Definir si «Corrección requerida» es un estado real del caso o del resultado y actualizar el filtro según ese modelo.
-6. Mantener el UUID técnico del caso separado de `referenceCode` en los tipos del frontend.
+Si se requiere buscar por investigador, acordar qué datos de asignación debe devolver el endpoint.

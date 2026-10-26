@@ -1,7 +1,7 @@
 import type { CaseStatus } from "./api";
 
-export type PatientCaseFilter = "PENDING" | "IN_PROGRESS" | "RESULT_AVAILABLE" | "COMPLETED";
-export type PatientCaseSort = "createdAt,desc" | "createdAt,asc";
+export type PatientCaseFilter = "PENDING" | "IN_PROGRESS" | "RESULT_AVAILABLE";
+export type PatientCaseSort = "createdAt:desc" | "createdAt:asc";
 export type PatientCaseCreationStage =
   | "INFORMATION_PENDING"
   | "CONSENT_PENDING"
@@ -28,7 +28,7 @@ export interface PatientCasesResponse {
   statusCounts: Record<"ALL" | PatientCaseFilter, number>;
   appliedFilters: {
     q: string;
-    status: PatientCaseFilter | null;
+    status: PatientCaseFilter | "ALL" | null;
     sort: PatientCaseSort;
   };
 }

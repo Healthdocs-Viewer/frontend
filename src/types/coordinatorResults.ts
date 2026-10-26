@@ -1,13 +1,12 @@
 export type CoordinatorResultStatus =
   | "UPLOADED"
   | "CORRECTION_REQUIRED"
-  | "AVAILABLE"
-  | "DELETED";
+  | "AVAILABLE";
 
 export type CoordinatorResultSortField =
-  | "name"
+  | "originalFilename"
   | "referenceCode"
-  | "studentName"
+  | "researcherName"
   | "uploadedAt"
   | "version"
   | "status"
@@ -19,13 +18,12 @@ export type CoordinatorResultSort =
 
 export interface CoordinatorResultItem {
   id: string;
-  name: string;
   file: {
     id: string;
     originalFilename: string;
-    contentType: string;
-    sizeBytes: number;
-    extension?: string;
+    contentType: string | null;
+    sizeBytes: number | null;
+    extension: string | null;
   };
   case: {
     id: string;
@@ -34,18 +32,16 @@ export interface CoordinatorResultItem {
   };
   uploadedBy: {
     userId: string;
-    studentCode: string;
-    fullName: string;
-  };
-  uploadedAt: string;
-  updatedAt: string;
+    studentCode: string | null;
+    fullName: string | null;
+  } | null;
+  uploadedAt: string | null;
+  updatedAt: string | null;
   version: number;
   status: CoordinatorResultStatus;
-  correctionRequest: unknown;
+  correctionRequest: string | null;
+  publicationType: "INITIAL" | "CORRECTED" | null;
   availableAt: string | null;
-  deletedAt: string | null;
-  deletedBy: string | null;
-  deletionReason: string | null;
 }
 
 export interface CoordinatorResultsResponse {
@@ -55,7 +51,6 @@ export interface CoordinatorResultsResponse {
     uploaded: number;
     correctionRequired: number;
     available: number;
-    deleted: number;
   };
   page: number;
   size: number;

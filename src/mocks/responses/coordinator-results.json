@@ -2,7 +2,6 @@
   "items": [
     {
       "id": "d0000000-0000-4000-8000-000000000001",
-      "name": "Informe radiológico tórax",
       "file": {
         "id": "e0000000-0000-4000-8000-000000000001",
         "originalFilename": "Informe-radiol-gico-t-rax.pdf",
@@ -25,14 +24,11 @@
       "version": 1,
       "status": "UPLOADED",
       "correctionRequest": null,
-      "availableAt": null,
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "publicationType": null,
+      "availableAt": null
     },
     {
       "id": "d0000000-0000-4000-8000-000000000002",
-      "name": "Segmentación pulmonar",
       "file": {
         "id": "e0000000-0000-4000-8000-000000000002",
         "originalFilename": "Segmentaci-n-pulmonar.dcm",
@@ -55,14 +51,11 @@
       "version": 2,
       "status": "AVAILABLE",
       "correctionRequest": null,
-      "availableAt": "2026-09-21T09:10:00Z",
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "publicationType": "CORRECTED",
+      "availableAt": "2026-09-21T09:10:00Z"
     },
     {
       "id": "d0000000-0000-4000-8000-000000000003",
-      "name": "Mediciones cardíacas",
       "file": {
         "id": "e0000000-0000-4000-8000-000000000003",
         "originalFilename": "Mediciones-card-acas.pdf",
@@ -84,15 +77,12 @@
       "updatedAt": "2026-09-20T11:20:00Z",
       "version": 1,
       "status": "CORRECTION_REQUIRED",
-      "correctionRequest": null,
-      "availableAt": null,
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "correctionRequest": "Corregir las medidas del eje longitudinal y adjuntar la escala utilizada.",
+      "publicationType": "INITIAL",
+      "availableAt": null
     },
     {
       "id": "d0000000-0000-4000-8000-000000000004",
-      "name": "Reconstrucción 3D",
       "file": {
         "id": "e0000000-0000-4000-8000-000000000004",
         "originalFilename": "Reconstrucci-n-3D.zip",
@@ -115,14 +105,11 @@
       "version": 1,
       "status": "UPLOADED",
       "correctionRequest": null,
-      "availableAt": null,
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "publicationType": null,
+      "availableAt": null
     },
     {
       "id": "d0000000-0000-4000-8000-000000000005",
-      "name": "Informe final",
       "file": {
         "id": "e0000000-0000-4000-8000-000000000005",
         "originalFilename": "Informe-final.pdf",
@@ -145,14 +132,11 @@
       "version": 3,
       "status": "AVAILABLE",
       "correctionRequest": null,
-      "availableAt": "2026-09-17T17:22:00Z",
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "publicationType": "CORRECTED",
+      "availableAt": "2026-09-17T17:22:00Z"
     },
     {
       "id": "d0000000-0000-4000-8000-000000000006",
-      "name": "Máscaras de segmentación",
       "file": {
         "id": "e0000000-0000-4000-8000-000000000006",
         "originalFilename": "M-scaras-de-segmentaci-n.zip",
@@ -174,15 +158,12 @@
       "updatedAt": "2026-09-16T16:40:00Z",
       "version": 1,
       "status": "CORRECTION_REQUIRED",
-      "correctionRequest": null,
-      "availableAt": null,
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "correctionRequest": "Revisar la segmentación de las estructuras periféricas y volver a cargar el archivo.",
+      "publicationType": "INITIAL",
+      "availableAt": null
     },
     {
       "id": "d0000000-0000-4000-8000-000000000007",
-      "name": "Informe preliminar",
       "file": {
         "id": "e0000000-0000-4000-8000-000000000007",
         "originalFilename": "Informe-preliminar.pdf",
@@ -205,14 +186,11 @@
       "version": 1,
       "status": "AVAILABLE",
       "correctionRequest": null,
-      "availableAt": "2026-09-15T12:15:00Z",
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "publicationType": "INITIAL",
+      "availableAt": "2026-09-15T12:15:00Z"
     },
     {
       "id": "d0000000-0000-4000-8000-000000000008",
-      "name": "Análisis de imágenes",
       "file": {
         "id": "e0000000-0000-4000-8000-000000000008",
         "originalFilename": "An-lisis-de-im-genes.pdf",
@@ -235,16 +213,13 @@
       "version": 2,
       "status": "UPLOADED",
       "correctionRequest": null,
-      "availableAt": null,
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "publicationType": null,
+      "availableAt": null
     }
   ],
   "summary": {
     "total": 8,
     "available": 3,
-    "deleted": 0,
     "correctionRequired": 2,
     "uploaded": 3
   },

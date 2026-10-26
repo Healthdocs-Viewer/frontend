@@ -11,6 +11,7 @@ import type {
   SaveStudentAssignmentsRequest,
 } from "../types/academicStudents";
 import type { AcademicCasesResponse } from "../types/academicCases";
+import { apiClient, isMockMode } from "./apiClient";
 
 const studentResponse = studentsMock as AcademicStudentsResponse;
 const caseResponse = studentCasesMock as AcademicStudentCasesResponse;
@@ -23,7 +24,6 @@ let assignmentIdsByStudent = Object.fromEntries(
     caseResponse.items.slice(0, student.assignedCaseCount).map((item) => item.id),
   ]),
 ) as Record<string, string[]>;
-const caseAccessVersionById = Object.fromEntries(academicCases.map((item) => [item.id, 1])) as Record<string, number>;
 
 function getAcademicCaseForStudentCase(studentCaseId: string) {
   const studentCase = caseResponse.items.find((item) => item.id === studentCaseId);
@@ -35,16 +35,16 @@ function getStudentCaseForAcademicCase(caseId: string) {
   return academicCase && caseResponse.items.find((item) => item.referenceCode === academicCase.referenceCode);
 }
 
-const studentIdsByCase = Object.fromEntries(academicCases.map((item) => [item.id, [] as string[]])) as Record<string, string[]>;
+const researcherIdsByCase = Object.fromEntries(academicCases.map((item) => [item.id, [] as string[]])) as Record<string, string[]>;
 for (const student of students) {
   for (const studentCaseId of assignmentIdsByStudent[student.userId] ?? []) {
     const academicCase = getAcademicCaseForStudentCase(studentCaseId);
-    if (academicCase) studentIdsByCase[academicCase.id].push(student.userId);
+    if (academicCase) researcherIdsByCase[academicCase.id].push(student.userId);
   }
 }
 
-const seededCaseIds = new Set(caseAssignmentsSeed.studentIds);
-const seededPreviousIds = new Set(studentIdsByCase[caseAssignmentsSeed.caseId] ?? []);
+const seededCaseIds = new Set(caseAssignmentsSeed.researcherIds);
+const seededPreviousIds = new Set(researcherIdsByCase[caseAssignmentsSeed.caseId] ?? []);
 const seededCase = getStudentCaseForAcademicCase(caseAssignmentsSeed.caseId);
 for (const student of students) {
   const wasAssigned = seededPreviousIds.has(student.userId);
@@ -58,16 +58,38 @@ for (const student of students) {
       : existing.filter((id) => id !== seededCase.id);
   }
 }
-studentIdsByCase[caseAssignmentsSeed.caseId] = [...caseAssignmentsSeed.studentIds];
-studentResponse.summary.totalAssignedCases += caseAssignmentsSeed.studentIds.length - seededPreviousIds.size;
-caseAccessVersionById[caseAssignmentsSeed.caseId] = caseAssignmentsSeed.assignmentVersion;
+researcherIdsByCase[caseAssignmentsSeed.caseId] = [...caseAssignmentsSeed.researcherIds];
+studentResponse.summary.totalAssignedCases += caseAssignmentsSeed.researcherIds.length - seededPreviousIds.size;
 
 function assignedStudentsForCase(caseId: string): string[] {
-  return [...(studentIdsByCase[caseId] ?? [])];
+  return [...(researcherIdsByCase[caseId] ?? [])];
 }
 
 // Future endpoint: GET /api/v1/operations/students?q=&status=&sort=&page=&size=
 export async function getAcademicStudents(query = "", page = 0, requestedSize = 100): Promise<AcademicStudentsResponse> {
+  if (!isMockMode()) {
+    const response = await apiClient.operations.searchResearchers(query, "AUTHORIZED", page, requestedSize);
+    return {
+      summary: {
+        totalStudents: response.summary.totalResearchers,
+        authorizedStudents: response.summary.authorizedResearchers,
+        totalAssignedCases: response.summary.totalAssignedCases,
+      },
+      items: response.items.map((researcher) => ({
+        userId: researcher.userId,
+        studentCode: researcher.researcherCode,
+        fullName: researcher.fullName,
+        email: researcher.email,
+        authorizationStatus: researcher.authorizationStatus,
+        assignedCaseCount: researcher.assignedCaseCount,
+      })),
+      page: response.page,
+      size: response.size,
+      totalItems: response.totalItems,
+      totalPages: response.totalPages,
+      appliedFilters: { q: response.appliedFilters.q, status: "AUTHORIZED", sort: "name,asc" },
+    };
+  }
   const normalizedQuery = query.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
   const orderedStudents = students.filter((student) =>
     `${student.fullName} ${student.email} ${student.studentCode}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es").includes(normalizedQuery),
@@ -89,12 +111,26 @@ export async function getAcademicStudents(query = "", page = 0, requestedSize = 
 
 // Future endpoint: GET /api/v1/operations/cases/{caseId}/assignments
 export async function getStudentAssignmentsForCase(caseId: string): Promise<CaseStudentAssignmentsResponse> {
+  if (!isMockMode()) {
+    const assignment = await apiClient.operations.getCaseAssignments(caseId);
+    return {
+      caseId: assignment.caseId,
+      researcherIds: assignment.researcherIds,
+      students: assignment.researchers.map((researcher) => ({
+        userId: researcher.userId,
+        studentCode: researcher.researcherCode,
+        fullName: researcher.fullName,
+        email: researcher.email,
+        authorizationStatus: researcher.authorizationStatus,
+        assignedCaseCount: researcher.assignedCaseCount,
+      })),
+    };
+  }
   if (!academicCases.some((item) => item.id === caseId)) throw new Error("El caso no existe.");
   return {
     caseId,
-    studentIds: assignedStudentsForCase(caseId),
+    researcherIds: assignedStudentsForCase(caseId),
     students: students.filter((student) => assignedStudentsForCase(caseId).includes(student.userId)).map((student) => ({ ...student })),
-    assignmentVersion: caseAccessVersionById[caseId] ?? 1,
   };
 }
 
@@ -103,20 +139,31 @@ export async function saveStudentAssignmentsForCase(
   caseId: string,
   request: SaveCaseStudentAssignmentsRequest,
 ): Promise<CaseStudentAssignmentsResponse> {
-  const current = await getStudentAssignmentsForCase(caseId);
-  if (current.assignmentVersion !== request.expectedVersion) {
-    throw new Error("Las asignaciones cambiaron desde que abriste el panel. Recarga e inténtalo de nuevo.");
+  if (!isMockMode()) {
+    const assignment = await apiClient.operations.replaceCaseAssignments(caseId, request.researcherIds);
+    return {
+      caseId: assignment.caseId,
+      researcherIds: assignment.researcherIds,
+      students: assignment.researchers.map((researcher) => ({
+        userId: researcher.userId,
+        studentCode: researcher.researcherCode,
+        fullName: researcher.fullName,
+        email: researcher.email,
+        authorizationStatus: researcher.authorizationStatus,
+        assignedCaseCount: researcher.assignedCaseCount,
+      })),
+    };
   }
-
-  const requestedIds = [...new Set(request.studentIds)];
+  const current = await getStudentAssignmentsForCase(caseId);
+  const requestedIds = [...new Set(request.researcherIds)];
   const validStudents = new Set(students.map((student) => student.userId));
   if (requestedIds.some((id) => !validStudents.has(id))) throw new Error("La selección contiene investigadores no válidos.");
-  const currentIds = new Set(current.studentIds);
+  const currentIds = new Set(current.researcherIds);
   const newUnauthorized = requestedIds.some((id) => !currentIds.has(id) && students.find((student) => student.userId === id)?.authorizationStatus !== "AUTHORIZED");
   if (newUnauthorized) throw new Error("Solo se puede dar acceso a investigadores autorizados.");
 
   const requestedSet = new Set(requestedIds);
-  studentIdsByCase[caseId] = requestedIds;
+  researcherIdsByCase[caseId] = requestedIds;
   for (const student of students) {
     const wasAssigned = currentIds.has(student.userId);
     const willBeAssigned = requestedSet.has(student.userId);
@@ -131,13 +178,17 @@ export async function saveStudentAssignmentsForCase(
     }
   }
 
-  studentResponse.summary.totalAssignedCases += requestedIds.length - current.studentIds.length;
-  caseAccessVersionById[caseId] = current.assignmentVersion + 1;
+  studentResponse.summary.totalAssignedCases += requestedIds.length - current.researcherIds.length;
+  const academicCase = academicCases.find((item) => item.id === caseId);
+  if (academicCase?.status === "FILES_RECEIVED" && requestedIds.length > 0) {
+    academicCase.status = "ENABLED_FOR_PROCESSING";
+  } else if (academicCase?.status === "ENABLED_FOR_PROCESSING" && requestedIds.length === 0) {
+    academicCase.status = "FILES_RECEIVED";
+  }
   return {
     caseId,
-    studentIds: requestedIds,
+    researcherIds: requestedIds,
     students: students.filter((student) => requestedSet.has(student.userId)).map((student) => ({ ...student })),
-    assignmentVersion: caseAccessVersionById[caseId],
   };
 }
 
@@ -172,11 +223,10 @@ export async function saveCasesForStudent(
     const wasAssigned = previousIds.has(studentCase.id);
     const willBeAssigned = nextIdSet.has(studentCase.id);
     if (wasAssigned === willBeAssigned) continue;
-    const currentStudents = new Set(studentIdsByCase[academicCase.id] ?? []);
+    const currentStudents = new Set(researcherIdsByCase[academicCase.id] ?? []);
     if (willBeAssigned) currentStudents.add(studentId);
     else currentStudents.delete(studentId);
-    studentIdsByCase[academicCase.id] = [...currentStudents];
-    caseAccessVersionById[academicCase.id] += 1;
+    researcherIdsByCase[academicCase.id] = [...currentStudents];
   }
   assignmentIdsByStudent = { ...assignmentIdsByStudent, [studentId]: nextIds };
   students = students.map((student): AcademicStudent =>

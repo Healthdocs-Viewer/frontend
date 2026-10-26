@@ -1,11 +1,11 @@
 {
-  "summary": { "totalStudents": 18, "authorizedStudents": 16, "totalAssignedCases": 42 },
+  "summary": { "totalStudents": 18, "authorizedStudents": 17, "totalAssignedCases": 42 },
   "items": [
     { "userId": "a0000001-0000-4000-8000-000000000001", "studentCode": "EST-1187", "fullName": "Ana Ruiz", "email": "aruiz@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 5 },
     { "userId": "a0000002-0000-4000-8000-000000000002", "studentCode": "EST-1042", "fullName": "Laura Gómez", "email": "lgomez@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 3 },
     { "userId": "a0000003-0000-4000-8000-000000000003", "studentCode": "EST-1205", "fullName": "Mateo Sánchez", "email": "msanchez@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 4 },
     { "userId": "a0000004-0000-4000-8000-000000000004", "studentCode": "EST-0998", "fullName": "Camila Vega", "email": "cvega@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 2 },
-    { "userId": "a0000005-0000-4000-8000-000000000005", "studentCode": "EST-1076", "fullName": "Daniel Ramírez", "email": "dramirez@unal.edu.co", "authorizationStatus": "PENDING", "assignedCaseCount": 0 },
+    { "userId": "a0000005-0000-4000-8000-000000000005", "studentCode": "EST-1076", "fullName": "Daniel Ramírez", "email": "dramirez@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 0 },
     { "userId": "a0000006-0000-4000-8000-000000000006", "studentCode": "EST-1033", "fullName": "Paula Torres", "email": "ptorres@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 6 },
     { "userId": "a0000007-0000-4000-8000-000000000007", "studentCode": "EST-1101", "fullName": "Sofía Herrera", "email": "sherrera@unal.edu.co", "authorizationStatus": "RESTRICTED", "assignedCaseCount": 1 },
     { "userId": "a0000008-0000-4000-8000-000000000008", "studentCode": "EST-1250", "fullName": "Juan Castillo", "email": "jcastillo@unal.edu.co", "authorizationStatus": "AUTHORIZED", "assignedCaseCount": 4 },

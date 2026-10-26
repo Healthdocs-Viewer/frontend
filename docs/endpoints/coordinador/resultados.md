@@ -1,6 +1,6 @@
 # Contrato de datos: Resultados de docencia
 
-Documento de trabajo para la vista `/resultados`, usada por el rol de docencia. Describe los datos que necesita la tabla y propone un contrato para consultarlos y gestionarlos. Las propuestas no sustituyen el OpenAPI canónico hasta que se acuerden e incorporen allí.
+Contrato de datos y estado de implementación de la vista `/resultados`, usada por el rol coordinador. El OpenAPI es la referencia canónica para las operaciones y modelos.
 
 ## Qué muestra la interfaz
 
@@ -11,24 +11,20 @@ Documento de trabajo para la vista `/resultados`, usada por el rol de docencia. 
 - Paginación local de ocho filas por página.
 - Acción «Ver caso», que abre `/casos_academicos/:referenceCode`.
 
-Cada fila representa un resultado asociado a un caso. La interfaz actual contiene datos locales de demostración; todavía no obtiene estas filas de un endpoint de listado.
+Cada fila representa un resultado asociado a un caso. La interfaz todavía contiene datos locales de demostración. El backend ya ofrece `GET /api/v1/operations/results`; la conexión de la tabla sigue pendiente.
 
-## Contrato propuesto para listar resultados
+## Endpoint existente para listar resultados
 
 ```http
-GET /api/v1/operations/results?q=CAS-2026&status=UPLOADED&sort=uploadedAt,desc&page=0&size=8
+GET /api/v1/operations/results
 Authorization: Bearer <token>
 ```
 
-El backend determina al coordinador desde el token y limita los resultados a su ámbito autorizado. No se debe aceptar un `coordinatorId` libre enviado por el cliente para ampliar el alcance.
+El backend determina al coordinador desde el token y limita los resultados a su ámbito autorizado. No se debe aceptar un `coordinatorId` libre enviado por el cliente para ampliar el alcance. Actualmente devuelve la lista completa; no implementa los parámetros de búsqueda, filtros, orden ni paginación mostrados aquí. La vista puede procesarlos localmente.
 
 | Parámetro | Significado |
 | --- | --- |
-| `q` | Búsqueda por nombre del archivo/resultado, código del caso o nombre/código del investigador. |
-| `status` | Filtro opcional por estado canónico: `UPLOADED`, `AVAILABLE`, `CORRECTION_REQUIRED` o `DELETED`. Sin valor lista todos, incluidos los eliminados. |
-| `sort` | Orden por `name`, `referenceCode`, `researcherName`, `uploadedAt`, `version`, `status` o `updatedAt`, con `asc`/`desc`. |
-| `page` | Índice de página empezando en 0. |
-| `size` | Resultados por página; valor inicial 8 y máximo sugerido 100. |
+Los parámetros `q`, `status`, `sort`, `page` y `size` del ejemplo son una posible evolución; no forman parte de la implementación actual y no deben enviarse desde el cliente.
 
 ### Respuesta propuesta
 
@@ -37,7 +33,6 @@ El backend determina al coordinador desde el token y limita los resultados a su 
   "items": [
     {
       "id": "result-uuid",
-      "name": "Informe radiológico tórax",
       "file": {
         "id": "file-uuid",
         "originalFilename": "informe.pdf",
@@ -60,22 +55,19 @@ El backend determina al coordinador desde el token y limita los resultados a su 
       "version": 1,
       "status": "UPLOADED",
       "correctionRequest": null,
-      "availableAt": null,
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "publicationType": null,
+      "availableAt": null
     }
   ],
   "summary": {
-    "total": 24,
+    "total": 22,
     "uploaded": 10,
     "correctionRequired": 4,
-    "available": 8,
-    "deleted": 2
+    "available": 8
   },
   "page": 0,
   "size": 8,
-  "totalItems": 24,
+  "totalItems": 22,
   "totalPages": 3,
   "appliedFilters": {
     "q": "CAS-2026",
@@ -85,61 +77,65 @@ El backend determina al coordinador desde el token y limita los resultados a su 
 }
 ```
 
-`id` es el UUID técnico de resultado para las operaciones. `case.referenceCode` se usa para navegar y se muestra en la tabla; `case.id` es el UUID para consultar y operar sobre el caso. `name` es el título de presentación del resultado y puede derivarse inicialmente del nombre de archivo si producto no necesita un título distinto. `studyName` mantiene el nombre de estudio libre definido en el contrato común de casos.
+`id` es el UUID técnico de resultado para las operaciones. `case.referenceCode` se usa para navegar y se muestra en la tabla; `case.id` es el UUID para consultar y operar sobre el caso. El nombre del resultado se toma de `file.originalFilename`; no existe un campo `name` separado. `studyName` mantiene el nombre de estudio libre definido en el contrato común de casos.
 
-Cuando `status=DELETED`, `deletedAt`, `deletedBy` y `deletionReason` son obligatorios; en los demás estados son `null`. La fila sigue presente para usuarios internos autorizados. La pantalla de demostración todavía no tiene el filtro «Eliminados» ni presenta estos datos; ambos forman parte del contrato de interfaz acordado.
+La respuesta contiene únicamente la versión vigente por caso. **Una versión de resultado es un solo archivo**, no un paquete de varios archivos. Cada nueva carga ocupa el siguiente número de versión de ese caso; las versiones anteriores y las bajas lógicas conservan su archivo y auditoría (`deletedAt`, `deletedBy`, `deletionReason`) en el historial, fuera de estas tablas habituales. `correctionRequest` contiene el motivo cuando el estado es `CORRECTION_REQUIRED`; en los demás estados es `null`.
 
 Las fechas se envían como instantes ISO 8601 en UTC. El frontend las presenta en hora local con el formato acordado para la interfaz, por ejemplo `20/9/2026, 16:20`; no se debe enviar una fecha ya formateada como texto desde el backend.
 
 `sizeBytes` es el valor numérico canónico; la interfaz puede convertirlo a `1.2 MB`. `extension` puede inferirse de `originalFilename`, por lo que se puede omitir si no se requiere explícitamente. No se deben enviar enlaces permanentes de descarga en el listado: la descarga debe autorizarse y generar una URL temporal mediante una operación específica.
 
-En esta etapa el archivo de resultado solo se **descarga**. No se ofrece vista previa ni visualización integrada, y solo hay un archivo vigente por caso.
+En esta etapa el archivo de resultado solo se **descarga**. No se ofrece vista previa ni visualización integrada. Hay una sola versión vigente por caso y cada versión corresponde a un archivo.
 
 ## Estados y acciones
 
 | Estado de API | Etiqueta de interfaz | Significado |
 | --- | --- | --- |
-| `UPLOADED` | Cargado | El investigador cargó el resultado; aún no está disponible para el paciente. |
-| `CORRECTION_REQUIRED` | Corrección requerida | Un coordinador detectó que un resultado ya publicado necesita reemplazo. El archivo publicado deja de estar disponible para descarga del paciente. No significa que la corrección ya esté hecha. |
-| `AVAILABLE` | Disponible para el paciente | El coordinador publicó el resultado para consulta del paciente. |
-| `DELETED` | Eliminado | El resultado se retiró. Sigue visible en el listado y detalle internos para coordinación e investigación, con motivo, actor y fecha; no aparece para el paciente ni se puede descargar. |
+| `UPLOADED` | Cargado | El investigador cargó el resultado; aún no está disponible para el propietario del caso. |
+| `CORRECTION_REQUIRED` | Corrección requerida | Un coordinador detectó que un resultado ya publicado necesita reemplazo. El archivo publicado deja de estar disponible para descarga del propietario. No significa que la corrección ya esté hecha. |
+| `AVAILABLE` | Disponible para el propietario | El coordinador publicó el resultado para consulta del propietario del caso. |
 
 ### Flujo acordado para el producto
 
-`UPLOADED → AVAILABLE → CORRECTION_REQUIRED → UPLOADED → AVAILABLE`. El ciclo de corrección puede repetirse. Desde `UPLOADED`, `AVAILABLE` o `CORRECTION_REQUIRED` se puede pasar a `DELETED`; `DELETED` es terminal y no se reutiliza para una nueva carga. `CORRECTION_REQUIRED` es un estado del **resultado**, no una etiqueta para un archivo ya corregido. La nueva carga queda en `UPLOADED` para revisión; solo el coordinador la vuelve a publicar. Un archivo corregido y publicado queda en `AVAILABLE`, con un dato de auditoría que indique que reemplaza una publicación anterior. No hace falta un estado «Corregido».
+La primera carga es la versión `1`; cuando coordinación la publica, queda como tipo `INITIAL`. Si el investigador detecta un error antes de publicar, reemplaza la versión `UPLOADED` mediante dos operaciones: elimina primero la pendiente con motivo (pasa a `DELETED` en historial y el caso vuelve a `ENABLED_FOR_PROCESSING`) y después carga la siguiente versión. La nueva versión queda pendiente de revisión y coordinación la publica. No existe reemplazo directo durante la carga. Si el investigador quiere retirar la pendiente sin reemplazo, puede eliminarla y el caso queda habilitado para procesamiento.
 
-Solo `AVAILABLE` permite descargar al paciente. Al solicitar una corrección o marcar `DELETED`, el resultado sale de sus listados y no se emiten nuevas URL de descarga. Las URL temporales ya emitidas pueden seguir vigentes hasta que expiren; se debe definir una vigencia corta o revocación si se necesita retirada inmediata.
+Si coordinación solicita una corrección de una versión ya publicada, esta pasa a `CORRECTION_REQUIRED` y guarda el motivo en `correctionRequest`; deja de estar disponible para el propietario. El investigador carga la siguiente versión (`UPLOADED`) y coordinación debe publicarla. Esa publicación es de tipo `CORRECTED`, reemplaza a la anterior como vigente y conserva todas las versiones en historial. El ciclo puede repetirse. La numeración es secuencial por caso y nunca se reutiliza, incluso cuando una versión pendiente se elimina o reemplaza.
 
-**Eliminación:** `DELETED` es una eliminación lógica del resultado, no un borrado físico del registro. Coordinación puede marcarlo como eliminado indicando un motivo; el investigador puede ver el resultado y su estado, pero esta vista no le da la acción de eliminar. Se conservan identificador, metadatos, motivo, actor y fecha de eliminación para trazabilidad. El archivo eliminado no se puede descargar desde ninguna de las tres vistas. Si se necesita un nuevo resultado para ese caso, se crea otro registro; no se reactiva el eliminado. La interfaz interna incluye filtro y contador de «Eliminados».
+Solo la versión vigente en `AVAILABLE` permite descargar al propietario del caso. Al solicitar una corrección o eliminarla, deja de aparecer en las tablas habituales y no se emiten nuevas URL de descarga. Las URL temporales ya emitidas pueden seguir vigentes hasta que expiren; se debe definir una vigencia corta o revocación si se necesita retirada inmediata.
 
-Este es el contrato de las interfaces. El backend hoy solo implementa `UPLOADED` y `AVAILABLE`; su adaptación a `CORRECTION_REQUIRED` y `DELETED`, incluida la sincronización con el caso y la descarga, se hará por separado.
+**Permisos de edición y eliminación:** el investigador asignado puede eliminar una versión `UPLOADED` antes de publicarse, sin aprobación previa; para reemplazarla debe completar la eliminación y luego iniciar otra carga. Coordinación conserva la decisión de publicar la nueva versión. Una versión `AVAILABLE` no se puede editar ni borrar directamente por el investigador: coordinación inicia el flujo con una solicitud de corrección. La baja lógica guarda `deletedAt`, `deletedBy` y `deletionReason`; el registro y el archivo quedan en el historial y no se descargan desde las vistas normales.
+
+El backend implementa `UPLOADED`, `AVAILABLE`, `CORRECTION_REQUIRED` y `DELETED`, con versionado por caso, historial y sincronización del estado del caso. `DELETED` se conserva como historial auditable y se excluye del listado normal.
 
 Acciones sugeridas:
 
 - «Ver caso»: navegar a `/casos_academicos/{case.referenceCode}`; usar `case.id` para las llamadas al API. Una dirección directa se resuelve según [la decisión de identificadores](../casos/identificadores-y-rutas.md).
-- Publicar para el paciente: reutilizar `POST /api/v1/operations/results/{resultId}/availability`.
-- Solicitar corrección de un resultado `AVAILABLE`: definir una operación nueva, por ejemplo `POST /api/v1/operations/results/{resultId}/correction-requests`, con un cuerpo `{ "reason": "..." }`. Debe pasar a `CORRECTION_REQUIRED` y retirar la descarga pública. La ruta y sus reglas de autorización quedan pendientes de implementar.
-- Marcar como eliminado: acción de coordinación con motivo obligatorio, transición a `DELETED` y actualización inmediata de los listados internos y del paciente. La operación HTTP queda por definir al actualizar el backend; el `DELETE` actual borra físicamente una carga no publicada y no implementa esta semántica.
+- Publicar para el propietario del caso: reutilizar `POST /api/v1/operations/results/{resultId}/availability`.
+- Solicitar corrección de un resultado `AVAILABLE`: `POST /api/v1/operations/results/{resultId}/correction-requests` con `{ "reason": "..." }`. Pasa a `CORRECTION_REQUIRED`, guarda el motivo, devuelve el caso a procesamiento y retira el acceso de descarga del propietario. La nueva carga del investigador queda pendiente de revisión.
+- Eliminar un resultado pendiente: el investigador asignado usa `DELETE /api/v1/internal/cases/{caseId}/results/{resultId}?reason=...`. Es una baja lógica con `deletedAt`, `deletedBy` y `deletionReason`; conserva archivo e historial.
 
 La pantalla actual solo presenta la acción de navegación al caso en la tabla; no asumir que ya existe una acción directa para publicar, corregir o descargar desde esta vista.
 
 ## Estado actual del backend
 
-- `GET /api/v1/internal/cases` lista casos asignados al usuario interno autenticado, e incluye un resumen de resultado cuando existe. No es un listado paginado/global de resultados para coordinación.
-- El resumen de resultado existente contiene información acotada como `id`, `originalFilename`, `status`, `uploadedBy`, `uploadedAt` y opcionalmente `availableAt`; no contiene el nombre/código del investigador, la versión ni el motivo de corrección que la tabla necesita.
-- `POST /api/v1/operations/results/{resultId}/availability` publica el resultado para el paciente. La operación requiere coordinador habilitado y asignación explícita al caso.
+- `GET /api/v1/operations/results` lista resultados en el alcance autorizado del coordinador. Es una lista completa, sin paginación ni filtros de servidor.
+- `GET /api/v1/internal/cases` es para casos asignados a investigadores e incluye un resumen de resultado; no es el endpoint del listado de coordinación.
+- `POST /api/v1/operations/results/{resultId}/availability` publica el resultado para el propietario del caso. La operación requiere coordinador habilitado y asignación explícita al caso.
 - El resultado se carga con `POST /api/v1/internal/cases/{caseId}/result-uploads` y se completa mediante el flujo de archivos. El resultado queda asociado al caso.
-- El modelo actual permite un resultado y un archivo de resultado por caso (`case_result` tiene relación única con `case_id`). No mantiene historial de versiones. Antes de publicar, el resultado puede eliminarse y cargarse de nuevo; eso no equivale a versionado auditable.
-- El backend no implementa aún `CORRECTION_REQUIRED` ni `DELETED`, ni un listado de resultados que consolide los datos de casos y investigadores para esta pantalla.
+- El backend conserva versiones por caso. Cada versión representa un solo archivo; las anteriores y las eliminadas permanecen en el historial.
+- El listado y las operaciones de publicar, solicitar corrección y consultar historial ya existen. La página frontend aún usa datos locales y debe conectarse al endpoint antes de afirmar que el flujo está integrado de extremo a extremo.
 - El modelo de demostración usa `study` y `caseId` como código visible; al conectarlo al contrato común, mapear a `case.studyName`, `case.id` (UUID) y `case.referenceCode` de forma separada.
 - La ruta `/resultados` está protegida por el guard de rol coordinador en `AppRoutes`; el backend debe validar también el rol y los permisos del listado.
 
 ## Decisiones pendientes
 
-1. Definir si `name` es un título editable del resultado o si la interfaz mostrará directamente `file.originalFilename`.
-2. Acordar si el listado incluye resultados de todos los casos del coordinador o solo los que están asignados al coordinador autenticado; aplicar el mismo alcance en los contadores.
-3. Adaptar el backend al flujo de corrección y eliminación documentado, con motivo, actor, fecha, retirada de descarga y nueva revisión antes de publicar.
-4. Definir la persistencia del historial y la numeración de versiones. El paciente solo necesita descargar la versión vigente; la tabla de docencia muestra «Versión», pero el modelo actual no conserva las anteriores.
-5. Mantener por ahora un archivo de resultado vigente por caso. Una entrega con varios archivos queda fuera de este alcance.
-6. Definir de dónde salen `fullName` y `researcherCode`; el listado de usuarios internos existente no los entrega.
-7. Corregir la navegación para utilizar `case.referenceCode` en la dirección y `case.id` (UUID) en las operaciones de API.
+1. Acordar si el listado incluye resultados de todos los casos del coordinador o solo los que están asignados al coordinador autenticado; aplicar el mismo alcance en los contadores.
+2. Una versión de resultado corresponde a un único archivo. Una entrega compuesta por varios archivos queda fuera de este alcance.
+3. Definir de dónde salen `fullName` y `researcherCode`; el listado de usuarios internos existente no los entrega.
+4. Corregir la navegación para utilizar `case.referenceCode` en la dirección y `case.id` (UUID) en las operaciones de API.
+
+## Brechas conocidas del flujo
+
+- El backend devuelve `expiresAt` al crear la intención de carga, pero aún no persiste ni valida el vencimiento al confirmar. El contrato exige rechazar confirmaciones vencidas; la implementación debe completarse.
+- Al eliminar una primera carga pendiente y crear la versión siguiente, el backend puede inferir `CORRECTED` a partir del número de versión aunque nunca haya existido una publicación. La clasificación `INITIAL`/`CORRECTED` debe basarse en el historial de publicación/corrección.
+- El mock del frontend permite operaciones en combinaciones de rol/estado que el backend rechaza y elimina registros físicamente. Los escenarios de prueba visual deben respetar el contrato y no presentar al mock como comportamiento autoritativo.

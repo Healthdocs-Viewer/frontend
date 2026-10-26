@@ -13,10 +13,10 @@
       "status": "UPLOADED",
       "uploadedAt": "2026-09-21T16:20:00Z",
       "updatedAt": "2026-09-21T16:20:00Z",
-      "availableAt": null,
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "version": 1,
+      "publicationType": null,
+      "correctionRequest": null,
+      "availableAt": null
     },
     {
       "id": "850e8400-e29b-41d4-a716-446655440104",
@@ -31,10 +31,10 @@
       "status": "UPLOADED",
       "uploadedAt": "2026-09-19T08:45:00Z",
       "updatedAt": "2026-09-19T08:45:00Z",
-      "availableAt": null,
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "version": 1,
+      "publicationType": null,
+      "correctionRequest": null,
+      "availableAt": null
     },
     {
       "id": "850e8400-e29b-41d4-a716-446655440105",
@@ -49,10 +49,10 @@
       "status": "AVAILABLE",
       "uploadedAt": "2026-09-17T09:12:00Z",
       "updatedAt": "2026-09-17T10:00:00Z",
-      "availableAt": "2026-09-17T10:00:00Z",
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "version": 1,
+      "publicationType": "INITIAL",
+      "correctionRequest": null,
+      "availableAt": "2026-09-17T10:00:00Z"
     },
     {
       "id": "850e8400-e29b-41d4-a716-446655440106",
@@ -67,18 +67,17 @@
       "status": "AVAILABLE",
       "uploadedAt": "2026-09-16T14:08:00Z",
       "updatedAt": "2026-09-16T15:00:00Z",
-      "availableAt": "2026-09-16T15:00:00Z",
-      "deletedAt": null,
-      "deletedBy": null,
-      "deletionReason": null
+      "version": 1,
+      "publicationType": "INITIAL",
+      "correctionRequest": null,
+      "availableAt": "2026-09-16T15:00:00Z"
     }
   ],
   "summary": {
     "total": 4,
     "uploaded": 2,
     "available": 2,
-    "correctionRequired": 0,
-    "deleted": 0
+    "correctionRequired": 0
   },
   "page": 0,
   "size": 8,

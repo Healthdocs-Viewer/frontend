@@ -1,6 +1,6 @@
 # Contrato de datos: Investigadores de docencia
 
-Documento de trabajo para la vista `/investigadores`, usada por el rol de coordinador. Describe la tabla de investigadores y el panel donde se consultan y gestionan sus casos asignados. Las propuestas no sustituyen el OpenAPI canónico hasta que se acuerden e incorporen allí.
+Contrato de interfaz para `/investigadores` y el drawer de asignaciones que también se abre desde `/casos_academicos`. Los esquemas y rutas canónicas del API se mantienen en OpenAPI; este documento describe su uso desde la interfaz.
 
 ## Qué muestra la interfaz
 
@@ -31,7 +31,7 @@ El servidor determina al coordinador desde el token. No se envía un identificad
 | Parámetro | Significado |
 | --- | --- |
 | `q` | Búsqueda parcial por nombre, código institucional o correo. |
-| `status` | Filtro opcional por `AUTHORIZED`, `PENDING` o `RESTRICTED`. |
+| `status` | Filtro opcional por `AUTHORIZED` o `RESTRICTED`. |
 | `sort` | Orden por `name`, `researcherCode`, `email`, `authorizationStatus` o `assignedCaseCount`, con `asc` o `desc`. |
 | `page` | Índice de página empezando en 0. |
 | `size` | Investigadores por página; valor inicial 8 y máximo sugerido 100. |
@@ -42,7 +42,7 @@ El servidor determina al coordinador desde el token. No se envía un identificad
 {
   "summary": {
     "totalResearchers": 18,
-    "authorizedResearchers": 15,
+    "authorizedResearchers": 17,
     "totalAssignedCases": 38
   },
   "items": [
@@ -71,15 +71,14 @@ El servidor determina al coordinador desde el token. No se envía un identificad
 
 ### Estados de autorización
 
-Los estados visibles actuales son “Autorizado”, “Pendiente” y “Restringido”. Propuesta de códigos:
+Los únicos estados de autorización son “Autorizado” y “Restringido”. `app_user.enabled` es independiente: controla si la cuenta puede iniciar sesión.
 
 ```text
 AUTHORIZED
-PENDING
 RESTRICTED
 ```
 
-El backend actual solo distingue si el usuario interno está habilitado o deshabilitado. No tiene un estado explícito de autorización académica ni de invitación pendiente; estos estados requieren una regla/dato de negocio acordado. No asumir que todo usuario deshabilitado está “Pendiente”.
+Cuando un coordinador o administrador cambia el rol de una cuenta de paciente a investigador, el nuevo estado es `AUTHORIZED`. No se usa `PENDING`. Cambiar a `RESTRICTED` impide nuevas asignaciones y conserva el rol, las asignaciones existentes y el historial.
 
 ## Contrato propuesto para los casos de un investigador
 
@@ -118,7 +117,7 @@ Authorization: Bearer <token>
 }
 ```
 
-El objeto de caso reutiliza los campos comunes: `id`, `referenceCode`, `studyName`, `status`, más `receivedAt` para la bandeja académica. `id` se usa para operaciones; `referenceCode` es el identificador mostrado.
+El objeto de caso reutiliza los campos comunes: `id`, `referenceCode`, `studyName`, `status`, más `receivedAt` para la bandeja académica. `receivedAt` es la fecha oficial guardada en el caso cuando su propietario confirma el envío y el estado cambia a `FILES_RECEIVED`; no se deriva de `stored_file.updated_at`. La bandeja de asignación contiene casos en `FILES_RECEIVED`, incluidos los que sean propiedad del propio coordinador. Al asignar a un investigador habilitado y autorizado, el caso pasa a `ENABLED_FOR_PROCESSING`. `id` se usa para operaciones; `referenceCode` es el identificador mostrado.
 
 ### Solicitud para guardar asignaciones
 
@@ -133,9 +132,9 @@ El objeto de caso reutiliza los campos comunes: `id`, `referenceCode`, `studyNam
 
 La solicitud reemplaza el conjunto de casos asignados al investigador por el conjunto enviado. El backend debe validar todas las altas y bajas antes de guardar para que el cambio sea atómico. Si algún caso no se puede asignar o retirar, responder con error sin guardar parcialmente. Debe conservarse el acceso operativo del coordinador cuando las reglas del flujo lo exijan.
 
-## Contrato propuesto para gestionar investigadores desde un caso
+## Gestión de investigadores desde un caso
 
-El drawer «Gestionar acceso» se abre para un caso y presenta el directorio de investigadores con los accesos actuales marcados. La búsqueda usa nombre, correo o código institucional. El cliente conserva el borrador mientras se busca; cambiar el término no modifica la selección.
+El drawer «Gestionar acceso» se abre para un caso y muestra inicialmente solo las asignaciones vigentes. Si el caso no tiene investigadores asignados, presenta un estado vacío que invita a usar el buscador. El directorio no se carga hasta que se escribe una búsqueda. La búsqueda usa nombre, correo o código institucional. El cliente conserva las asignaciones originales y la selección del borrador visibles mientras cambian los resultados; buscar no guarda ni modifica las asignaciones.
 
 ### Cargar directorio y asignaciones actuales
 
@@ -146,9 +145,9 @@ GET /api/v1/operations/researchers?q=ana%40unal.edu.co&sort=name,asc&page=0&size
 Authorization: Bearer <token>
 ```
 
-El tamaño 100 permite mostrar una lista amplia; si hay más páginas, el cliente podrá solicitarlas al escribir o paginar el directorio. Las filas seleccionadas que no coincidan con el término actual se conservan visibles en el drawer y no se desmarcan al cambiar de búsqueda.
+El tamaño 100 permite mostrar una lista amplia; si hay más páginas, el cliente podrá solicitarlas al escribir o paginar el directorio. Las asignaciones vigentes y las personas seleccionadas en el borrador se conservan visibles aunque no coincidan con la búsqueda actual, y no se desmarcan al cambiar el término.
 
-Para obtener la selección inicial y detectar ediciones concurrentes:
+Para obtener directamente las asignaciones vigentes del caso:
 
 ```http
 GET /api/v1/operations/cases/{caseId}/assignments
@@ -160,7 +159,6 @@ Authorization: Bearer <token>
 ```json
 {
   "caseId": "case-uuid",
-  "assignmentVersion": 3,
   "researchers": [
     {
       "userId": "researcher-uuid",
@@ -175,7 +173,7 @@ Authorization: Bearer <token>
 }
 ```
 
-`researchers` incluye el detalle de las asignaciones vigentes para que sigan identificables aunque no aparezcan en una página o búsqueda del directorio. `researcherIds` es la selección inicial compacta que el cliente usa para calcular altas y bajas. `assignmentVersion` es una versión opaca/monótona para control de concurrencia.
+`researchers` incluye el detalle de las asignaciones vigentes para que sigan identificables aunque no aparezcan en una página o búsqueda del directorio. `researcherIds` permite comparar la selección actual con el borrador del cliente. Ambas propiedades reflejan la relación vigente entre casos e investigadores; no existe un contador `assignmentVersion`.
 
 ### Guardar el conjunto seleccionado
 
@@ -189,27 +187,27 @@ Solicitud:
 
 ```json
 {
-  "researcherIds": ["researcher-uuid", "researcher-uuid-2"],
-  "expectedVersion": 3
+  "researcherIds": ["researcher-uuid"]
 }
 ```
 
-El servidor reemplaza el conjunto de investigadores asignados por `researcherIds`, valida todas las adiciones y retiros y confirma el cambio de forma atómica. La respuesta devuelve `caseId`, `researcherIds`, `researchers` y el nuevo `assignmentVersion`. Si `expectedVersion` ya no coincide con la versión vigente, responde `409 Conflict` sin guardar cambios; el cliente informa el conflicto y ofrece recargar las asignaciones. No se debe cerrar el drawer ni borrar el borrador si el guardado falla.
+La operación reemplaza de forma atómica el conjunto completo de asignaciones: `researcherIds` puede contener varios identificadores únicos. Los cambios se permiten cuando el caso está en `FILES_RECEIVED`, `ENABLED_FOR_PROCESSING`, `RESULT_UPLOADED` o `RESULT_AVAILABLE` y conserva un archivo de entrada activo. No se permiten cambios durante `INPUT_CHANGE_DRAFT` ni `INPUT_CHANGE_REVIEW`; la asignación vigente se conserva mientras se resuelve la solicitud. Las altas requieren investigadores habilitados con `authorizationStatus=AUTHORIZED`. Una asignación ya existente con autorización `RESTRICTED` se conserva aunque no se incluya en la lista solicitada. Esta operación no cambia el estado del caso. La respuesta devuelve `caseId`, `researcherIds` y `researchers`.
 
 ### Reglas de interacción y elegibilidad
 
-- Al abrir el drawer, el frontend carga directorio y asignaciones actuales. Muestra estados de carga, error y reintento.
+- Al abrir el drawer, el frontend carga las asignaciones actuales. Muestra un estado vacío si no hay ninguna. El directorio se carga al iniciar una búsqueda; ambas consultas muestran estados de carga, error y reintento.
 - La búsqueda es insensible a mayúsculas y tildes y puede usar debounce. Buscar por nombre, correo o código institucional.
-- Las casillas modifican un borrador local. El resumen compara ese borrador con la selección inicial y presenta cuántos accesos se agregarán y quitarán. «Guardar cambios» permanece deshabilitado si no hay diferencias.
+- La selección admite varios investigadores autorizados. El resumen muestra cuántas personas se agregarán y quitarán; «Guardar cambios» permanece deshabilitado si no hay cambios.
 - Un clic fuera, Escape, la X y «Cancelar» cierran directamente solo cuando no hay cambios. Con cambios pendientes abren una confirmación con «Seguir editando» y «Descartar cambios».
-- Un investigador `AUTHORIZED` puede agregarse. `PENDING` y `RESTRICTED` no se pueden agregar; si ya tenían acceso, permanecen visibles y marcados para permitir retirar el acceso.
-- Si falla el guardado, el drawer queda abierto y conserva el borrador. Solo una respuesta exitosa actualiza la asignación y cierra el panel.
+- Los casos en `INPUT_CHANGE_DRAFT` o `INPUT_CHANGE_REVIEW` son de solo consulta: se muestran las asignaciones, pero los controles de selección y guardado quedan deshabilitados. El backend rechaza cambios durante estos estados.
+- Las altas requieren estado `AUTHORIZED`; una persona `RESTRICTED` no puede recibir nuevas asignaciones, pero una asignación vigente se conserva.
+- Si falla el guardado, el drawer queda abierto y conserva el borrador. Una respuesta exitosa actualiza la selección base y muestra confirmación dentro del drawer, que permanece abierto.
 - El identificador enviado es `userId`; correo, nombre y código son datos de presentación/búsqueda. El cliente nunca decide el permiso final.
 - El backend valida que el token corresponda a un coordinador autorizado, que el caso pertenezca a su ámbito y que los usuarios sean investigadores válidos. El ID del coordinador no se recibe desde el cliente.
-- La asignación del coordinador que opera el caso es independiente de `researcherIds`; reemplazar las asignaciones de investigadores no debe retirar su acceso operativo.
+- El acceso operativo del coordinador que opera el caso es independiente de `researcherIds`; la asignación al investigador no retira el acceso del coordinador.
 - La respuesta de directorio es paginada. El frontend conserva en su borrador todas las selecciones, incluso si se ocultan al cambiar de página o búsqueda.
 
-Errores recomendados: `401` sesión ausente/expirada, `403` rol o permiso insuficiente, `404` caso o investigador fuera del ámbito visible, `409` versión de asignaciones desactualizada y `422` selección inválida o investigador no elegible. Las respuestas de error usan el formato común del API.
+Errores recomendados: `401` sesión ausente/expirada, `403` rol o permiso insuficiente, `404` caso o investigador fuera del ámbito visible y `422` selección inválida o investigador no elegible. Las respuestas de error usan el formato común del API.
 
 ## Cómo se obtiene el total de casos asignados
 
@@ -217,17 +215,9 @@ El número de la tabla es específico para cada investigador. Se calcula contand
 
 ## Estado actual del backend
 
-- `GET /api/v1/operations/users/internal` existe para coordinadores habilitados y devuelve usuarios internos habilitados con `id`, `email` y `role`. Aún no entrega `fullName`, `researcherCode`, estado académico ni `assignedCaseCount`.
-- No encontré una consulta que liste los casos de un investigador seleccionado ni sus asignaciones actuales.
-- `GET /api/v1/internal/cases` lista los casos asignados al usuario autenticado; no permite que coordinación consulte los casos de otra persona.
-- `POST /api/v1/operations/cases/{caseId}/assignments` agrega acceso de forma individual y solo permite casos `FILES_RECEIVED`. El frontend del drawer implementa un mock de consulta y guardado por lote; `GET/PUT /api/v1/operations/cases/{caseId}/assignments` aún deben implementarse en backend.
+- `GET /api/v1/operations/researchers` proporciona el directorio paginado, con búsqueda por nombre, correo o `researcherCode` y filtros de autorización.
+- `GET /api/v1/operations/cases/{caseId}/assignments` y `PUT /api/v1/operations/cases/{caseId}/assignments` permiten consultar y reemplazar atómicamente las asignaciones vigentes de un caso.
+- `GET /api/v1/operations/cases/academic` alimenta la tabla `/casos_academicos` con búsqueda, filtro por estado, orden y paginación. Devuelve identificador, fecha de recepción, estado y última actualización; el investigador asignado se consulta aparte al abrir el drawer.
+- `GET /api/v1/internal/cases` lista los casos asignados al usuario interno autenticado; no permite que coordinación consulte los casos de otra persona.
 - La ruta `/investigadores` está protegida por el guard de rol coordinador en `AppRoutes`; el backend debe validar también el rol y los permisos de cada operación.
 - El acceso a gestionar investigadores desde `/casos_academicos` y el detalle debe limitarse al rol coordinador; el backend debe verificar permisos para cada operación aunque la ruta del frontend esté protegida.
-
-## Decisiones pendientes
-
-1. Definir de dónde salen `fullName` y `researcherCode`, ya que el perfil actual solo expone correo, rol e identificador interno.
-2. Definir la fuente y ciclo de vida backend de `AUTHORIZED`, `PENDING` y `RESTRICTED`. El frontend propuesto solo permite agregar investigadores `AUTHORIZED` y deja retirar asignaciones existentes aunque el estado haya cambiado.
-3. Definir qué casos pueden asignarse o retirarse según su estado; el endpoint actual solo permite asignar casos en `FILES_RECEIVED`, mientras que el drawer académico lista casos habilitados para procesamiento o con resultados.
-4. Confirmar si coordinación puede gestionar cualquier investigador/caso o solo los que pertenecen a su ámbito.
-5. Acordar el tratamiento de las asignaciones del coordinador al guardar el conjunto de investigadores.

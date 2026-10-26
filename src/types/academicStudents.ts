@@ -1,6 +1,6 @@
 import type { CaseStatus } from "./api";
 
-export type StudentAuthorizationStatus = "AUTHORIZED" | "PENDING" | "RESTRICTED";
+export type StudentAuthorizationStatus = "AUTHORIZED" | "RESTRICTED";
 export type StudentSortField = "name" | "studentCode" | "email" | "authorizationStatus" | "assignedCaseCount";
 export type StudentSort = `${StudentSortField},asc` | `${StudentSortField},desc`;
 
@@ -59,11 +59,9 @@ export interface SaveStudentAssignmentsRequest {
 export interface CaseStudentAssignmentsResponse {
   caseId: string;
   students: AcademicStudent[];
-  studentIds: string[];
-  assignmentVersion: number;
+  researcherIds: string[];
 }
 
 export interface SaveCaseStudentAssignmentsRequest {
-  studentIds: string[];
-  expectedVersion: number;
+  researcherIds: string[];
 }

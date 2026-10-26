@@ -104,7 +104,6 @@ export const authService = {
 
   async login(credentials: LoginRequest): Promise<AuthSession> {
     if (AUTH_PROVIDER === "supabase") {
-      console.log("Hello from authService before supabase login");
       const { data, error } =
         await getSupabaseClient().auth.signInWithPassword(credentials);
       if (error) throw error;

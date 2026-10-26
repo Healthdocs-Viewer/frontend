@@ -1,0 +1,63 @@
+{
+  "case": {
+    "id": "c7010371-f7e2-4f31-a06b-79cbcb8c0218",
+    "referenceCode": "CAS-20260921-0002",
+    "studyName": "Radiografía de tórax",
+    "status": "RESULT_AVAILABLE",
+    "createdAt": "2026-09-20T20:45:00-05:00",
+    "updatedAt": "2026-09-20T20:47:00-05:00"
+  },
+  "steps": [
+    { "title": "Caso creado", "detail": "20/9/2026, 20:45", "state": "done" },
+    { "title": "Archivos recibidos", "detail": "20/9/2026, 20:46", "state": "done" },
+    { "title": "Solicitud de cambio", "detail": "Puedes iniciar una solicitud.", "state": "pending" },
+    { "title": "Revisión de coordinación", "detail": "Se revisará al enviar la solicitud.", "state": "pending" },
+    { "title": "Resultado disponible", "detail": "22/9/2026, 14:35", "state": "done" }
+  ],
+  "history": [
+    { "title": "Caso creado", "detail": "Se ha creado el caso en la plataforma.", "date": "20/9/2026, 20:45", "state": "done" },
+    { "title": "Consentimiento aceptado", "detail": "Has aceptado los términos y condiciones para este caso.", "date": "20/9/2026, 20:45", "state": "done" },
+    { "title": "Archivos recibidos", "detail": "Se recibieron los archivos del estudio.", "date": "20/9/2026, 20:46", "state": "done" },
+    { "title": "Caso enviado a coordinación", "detail": "El conjunto de archivos quedó bloqueado.", "date": "20/9/2026, 20:47", "state": "active" },
+    { "title": "Resultado disponible", "detail": "Coordinación publicó los documentos del estudio.", "date": "22/9/2026, 14:35", "state": "done" }
+  ],
+  "files": [
+    { "id": "file-1", "name": "torax_estudio_01.zip", "date": "18/9/2026, 16:12", "sortDate": 1790025120000, "size": "428 MB", "kind": "archive" },
+    { "id": "file-2", "name": "serie_dicom_ap.dcm", "date": "18/9/2026, 16:13", "sortDate": 1790025180000, "size": "36 MB", "kind": "dicom" },
+    { "id": "file-3", "name": "solicitud_estudio.pdf", "date": "18/9/2026, 16:14", "sortDate": 1790025240000, "size": "420 KB", "kind": "pdf" }
+  ],
+  "inputChangeRequests": [],
+  "consent": {
+    "status": "Consentimiento aceptado",
+    "termsVersion": "1.0",
+    "acceptedAt": "20/9/2026, 20:45",
+    "description": "Has autorizado el tratamiento y gestión de la información suministrada para la gestión académica y diagnóstica de este caso."
+  },
+  "result": {
+    "status": "Resultado disponible",
+    "description": "Coordinación publicó los resultados de este estudio. Puedes consultar y descargar cada documento.",
+    "files": [
+      {
+        "id": "result-1",
+        "name": "informe_radiologia_torax.pdf",
+        "label": "Informe radiológico",
+        "date": "22/9/2026, 14:32",
+        "size": "1.2 MB"
+      },
+      {
+        "id": "result-2",
+        "name": "imagen_referencia_torax.jpg",
+        "label": "Imagen de referencia",
+        "date": "22/9/2026, 14:32",
+        "size": "840 KB"
+      },
+      {
+        "id": "result-3",
+        "name": "recomendaciones_estudio.pdf",
+        "label": "Recomendaciones",
+        "date": "22/9/2026, 14:35",
+        "size": "560 KB"
+      }
+    ]
+  }
+}

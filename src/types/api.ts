@@ -24,6 +24,8 @@ export interface LoginResponse {
 export type CaseStatus =
   | 'CREATED'
   | 'FILES_RECEIVED'
+  | 'INPUT_CHANGE_DRAFT'
+  | 'INPUT_CHANGE_REVIEW'
   | 'ENABLED_FOR_PROCESSING'
   | 'RESULT_UPLOADED'
   | 'RESULT_AVAILABLE';
@@ -38,6 +40,27 @@ export interface CaseSummary {
 
 export interface CreateCaseRequest {
   studyName: string;
+  additionalReference?: string | null;
+  originInstitution: string;
+  studyDate: string;
+  notes?: string | null;
+}
+
+export type CaseWorkflowStatus =
+  | "INFORMATION_PENDING"
+  | "CONSENT_PENDING"
+  | "FILE_PENDING"
+  | "CONFIRMATION_PENDING";
+
+export interface CaseDetails extends Omit<CaseSummary, "status"> {
+  status: CaseStatus | CaseWorkflowStatus;
+  additionalReference: string | null;
+  originInstitution: string | null;
+  studyDate: string | null;
+  notes: string | null;
+  updatedAt: string;
+  creationStage?: 'INFORMATION_PENDING' | 'CONSENT_PENDING' | 'FILE_PENDING' | 'CONFIRMATION_PENDING' | null;
+  availableResultId?: string | null;
 }
 
 export interface AcceptConsentRequest {
@@ -61,6 +84,7 @@ export interface FileSummary {
 }
 
 export interface InternalCaseSummary extends CaseSummary {
+  updatedAt?: string | null;
   files: FileSummary[];
   result?: ResultSummary;
 }
@@ -68,10 +92,13 @@ export interface InternalCaseSummary extends CaseSummary {
 export interface ResultSummary {
   id: string;
   originalFilename: string;
-  status: 'UPLOADED' | 'AVAILABLE';
+  status: 'UPLOADED' | 'AVAILABLE' | 'CORRECTION_REQUIRED' | 'DELETED';
   uploadedBy?: string;
   uploadedAt?: string;
   availableAt?: string;
+  version?: number;
+  publicationType?: 'INITIAL' | 'CORRECTED' | null;
+  correctionRequest?: string | null;
 }
 
 export interface CreateUploadIntentRequest {
@@ -99,6 +126,9 @@ export interface CompleteUploadResponse {
     status: 'UPLOADED' | 'AVAILABLE';
     uploadedBy: string;
     uploadedAt: string;
+    version?: number;
+    publicationType?: 'INITIAL' | 'CORRECTED' | null;
+    correctionRequest?: string | null;
   };
   caseStatus: CaseStatus;
 }
@@ -114,6 +144,7 @@ export interface ErrorResponse {
   code: string;
   message: string;
   traceId: string;
+  status?: number;
 }
 
 export interface AssignCaseRequest {

@@ -18,6 +18,7 @@ import { NotificationsPage } from "../pages/notifications/NotificationsPage";
 import { PatientCaseDetailPage } from "../pages/patient/PatientCaseDetailPage";
 import { PatientCasesPage } from "../pages/patient/PatientCasesPage";
 import { ResearcherCasesPage } from "../pages/researcher/ResearcherCasesPage";
+import { ResearcherCaseDetailPage } from "../pages/researcher/ResearcherCaseDetailPage";
 import { ResearcherResultsPage } from "../pages/researcher/ResearcherResultsPage";
 import { ResultDetailPage } from "../pages/results/ResultDetailPage";
 import { ResultsPage } from "../pages/results/ResultsPage";
@@ -41,7 +42,6 @@ export const AppRoutes = () => (
     <Route element={<ProtectedRoute />}>
       <Route element={<AppLayout />}>
         <Route index element={<DashboardRedirect />} />
-        <Route path="notificaciones" element={<NotificationsPage />} />
         <Route path="configuracion" element={<SettingsPage />} />
         <Route path="ayuda" element={<HelpPage />} />
 
@@ -54,6 +54,10 @@ export const AppRoutes = () => (
           <Route path="mis_casos/:caseId/edit" element={<CreateCasePage />} />
           <Route path="mis_resultados" element={<ResultsPage />} />
           <Route path="mis_resultados/:caseId" element={<ResultDetailPage />} />
+        </Route>
+
+        <Route element={<RoleRoute allowedRoles={["patient"]} />}>
+          <Route path="notificaciones" element={<NotificationsPage />} />
         </Route>
 
         {/* Coordinator workspace */}
@@ -70,6 +74,7 @@ export const AppRoutes = () => (
         {/* Researcher workspace */}
         <Route element={<RoleRoute allowedRoles={["researcher"]} />}>
           <Route path="casos_asignados" element={<ResearcherCasesPage />} />
+          <Route path="casos_asignados/:caseId" element={<ResearcherCaseDetailPage />} />
           <Route path="resultados_cargados" element={<ResearcherResultsPage />} />
         </Route>
 

@@ -1,146 +1,98 @@
-# Contrato inicial: notificaciones
+# Notificaciones — contrato vigente y matriz inicial
 
-Documento de trabajo para la bandeja general de notificaciones. Es transversal a los roles que tengan acceso a ella; la vista actual corresponde al paciente (`/notificaciones`). Las propuestas deben incorporarse al OpenAPI canónico cuando se acuerden.
+Actualizado el 2026-10-24. Este documento describe el contrato vigente del backend y la conexión de `/notificaciones` para el alcance inicial del paso 5.
 
-## Categorías
+## Matriz de avisos
 
-`category` agrupa notificaciones para los filtros de la interfaz:
+| Evento de negocio | Destinatario | Motivo | Canales | Deduplicación | Estado |
+|---|---|---|---|---|---|
+| `RESULT_PUBLISHED` | Paciente dueño del caso. | Informar que se publicó un resultado disponible. | `IN_APP` siempre; `EMAIL` si el paciente activó `RESULT_AVAILABLE` y el envío está habilitado. | Clave estable `RESULT_PUBLISHED:<resultId>:<versionNumber>`; única en outbox, inbox por destinatario y entrega por canal. | Activo; se representa como tipo de aviso `RESULT_AVAILABLE`. |
+| `INPUT_CHANGE_OPENED` | — | El paciente abre su propio borrador de cambio de insumos. No requiere que el paciente responda a una solicitud ajena. | — | Clave de actividad `INPUT_CHANGE_OPENED:<requestId>`. | No genera notificación. |
+| `INPUT_CHANGE_RESPONSE_REQUESTED` (propuesto) | Paciente dueño del caso. | Una solicitud futura de coordinación que requiera una respuesta del paciente. | Por definir cuando exista el flujo; comenzar por `IN_APP`. | Solicitud + identificador de transición/versión. | No existe hoy como evento fuente ni genera avisos. |
 
-| Categoría | Uso |
-| --- | --- |
-| `CASES` | Cambios de casos y recepción o solicitud de archivos. |
-| `RESULTS` | Publicación, actualización o corrección de resultados. |
-| `SYSTEM` | Bienvenida, seguridad y avisos generales de la plataforma. |
+Los demás eventos de actividad no generan avisos en el alcance inicial. La actividad y las notificaciones son registros separados: una fila `activity_event` no es una notificación ni tiene estado de lectura.
 
-Estas categorías corresponden a los filtros actuales. Se pueden agregar otras cuando existan funciones que las necesiten; no se agregan de antemano categorías como citas, pagos o mensajes.
+## Endpoints implementados
 
-## Tipos de notificación iniciales
-
-`type` identifica el evento concreto. El backend persiste el código y los datos asociados; el frontend lo traduce a título, descripción, icono y estilo en el idioma de la interfaz.
-
-| Tipo | Categoría | Uso |
-| --- | --- | --- |
-| `CASE_CREATED` | `CASES` | Se creó un caso. |
-| `CASE_STATUS_CHANGED` | `CASES` | El caso cambió de estado; incluir el estado nuevo como dato asociado. |
-| `FILE_RECEIVED` | `CASES` | Se recibió un archivo enviado por el paciente. |
-| `FILE_REQUIRED` | `CASES` | Hace falta cargar un archivo o documento. |
-| `RESULT_AVAILABLE` | `RESULTS` | Se publicó el resultado inicial. |
-| `RESULT_CORRECTION_REQUIRED` | `RESULTS` | Se solicitó corregir un resultado ya publicado; aviso para el investigador asignado. Propuesto, aún sin evento persistido. |
-| `RESULT_CORRECTED` | `RESULTS` | Se publicó el archivo corregido; el paciente puede volver a descargar el resultado vigente. Propuesto, requiere historial de publicaciones. |
-| `RESULT_VIEWED` | `RESULTS` | El usuario consultó un resultado; aparece como ejemplo en la interfaz actual. |
-| `WELCOME` | `SYSTEM` | La cuenta está lista para usarse. |
-| `SECURITY_ALERT` | `SYSTEM` | Ocurrió un evento importante de seguridad. |
-| `ACCOUNT_NOTICE` | `SYSTEM` | Hay un aviso administrativo sobre la cuenta. |
-
-No crear un tipo distinto por cada frase o transición menor. Por ejemplo, “tu caso está siendo procesado” puede ser `CASE_STATUS_CHANGED` con el nuevo estado como dato asociado. `RESULT_CORRECTION_REQUIRED` indica que falta corregir; `RESULT_CORRECTED` indica que la nueva carga ya se publicó. La actualización sin solicitud de corrección queda fuera del flujo actual. Véase [el ciclo del resultado](../coordinador/resultados.md#estados-y-acciones).
-
-## Endpoints propuestos
-
-Todas las operaciones requieren autenticación. El backend deriva el usuario destinatario de la identidad autenticada; el cliente no envía un `userId` para leer o modificar su bandeja.
+Todas las rutas requieren una cuenta habilitada con rol `PATIENT`. El backend deriva el destinatario de la sesión autenticada; el cliente no puede consultar ni modificar la bandeja de otra persona.
 
 ```http
-GET  /api/v1/notifications?category=CASES&unreadOnly=true&page=0&size=20
+GET /api/v1/notifications?page=0&size=20
 POST /api/v1/notifications/{notificationId}/read
-POST /api/v1/notifications/read-all
-GET  /api/v1/notification-preferences
-PUT  /api/v1/notification-preferences
+GET /api/v1/notifications/preferences
+PUT /api/v1/notifications/preferences/email
 ```
 
-Parámetros de `GET /notifications`:
+El listado se ordena por `created_at DESC, id DESC`, usa página base cero, tamaño por defecto 20 y máximo 100. El marcado como leído es idempotente; una notificación que no pertenece al paciente se devuelve como no encontrada.
 
-| Parámetro | Significado |
-| --- | --- |
-| `category` | `CASES`, `RESULTS` o `SYSTEM`; opcional. |
-| `unreadOnly` | Si es `true`, solo notificaciones sin leer. La pestaña “Nuevas” puede usarlo. |
-| `page`, `size` | Paginación; por defecto página `0` y tamaño `20`. |
-
-Marcar como leída es idempotente: volver a marcar una notificación ya leída no cambia su fecha inicial de lectura. Marcar todas como leídas afecta únicamente las notificaciones del usuario autenticado.
-
-## Respuesta propuesta para el listado
+Ejemplo de listado:
 
 ```json
 {
-  "summary": {
-    "unreadCount": 3,
-    "totalCount": 6
-  },
-  "categoryCounts": {
-    "CASES": 3,
-    "RESULTS": 2,
-    "SYSTEM": 1
-  },
   "items": [
     {
       "id": "notification-uuid",
       "type": "RESULT_AVAILABLE",
-      "category": "RESULTS",
-      "caseId": "case-uuid",
-      "caseReferenceCode": "CAS-20260921-0001",
-      "createdAt": "2026-09-21T19:22:00Z",
-      "readAt": null,
-      "data": {
-        "studyName": "Radiografía de tórax"
-      }
-    },
-    {
-      "id": "notification-uuid-2",
-      "type": "CASE_STATUS_CHANGED",
-      "category": "CASES",
-      "caseId": "case-uuid-2",
-      "caseReferenceCode": "CAS-20260921-0002",
-      "createdAt": "2026-09-20T15:15:00Z",
-      "readAt": "2026-09-20T16:00:00Z",
-      "data": {
-        "studyName": "Resonancia de rodilla",
-        "status": "ENABLED_FOR_PROCESSING"
-      }
+      "caseReferenceCode": "CAS-20261024-0001",
+      "createdAt": "2026-10-24T14:30:00Z",
+      "readAt": null
     }
   ],
   "page": 0,
   "size": 20,
-  "totalItems": 6,
-  "totalPages": 1,
-  "appliedFilters": {
-    "category": null,
-    "unreadOnly": false
-  }
+  "totalElements": 1,
+  "totalPages": 1
 }
 ```
 
-`readAt: null` indica que la notificación está sin leer. `data` contiene solo los datos necesarios para presentar el evento. `caseReferenceCode` sirve para navegar al caso (`/mis_casos/{caseReferenceCode}`); `caseId` es el UUID para las llamadas al API. Una dirección directa debe resolverse según [la decisión de identificadores](../casos/identificadores-y-rutas.md). El frontend resuelve título, descripción, icono y color a partir de `type` y `data`.
+`readAt: null` indica que el aviso aún no se ha leído. El tipo, no metadatos libres, permite al frontend producir un texto neutral. `caseReferenceCode` permite navegar a `/mis_casos/{caseReferenceCode}`; el backend filtra la fila por propietario del caso antes de devolverla. La respuesta omite el ID interno del caso y el identificador del resultado porque la interfaz no los necesita.
 
-Todos los conteos deben corresponder al usuario autenticado y respetar los filtros acordados. Se recomienda que `categoryCounts` cuente las categorías sobre la bandeja completa, sin aplicar el filtro actual, mientras `totalItems` refleja el listado filtrado y paginado.
-
-## Preferencias
-
-La pantalla actual ofrece preferencias por categoría. Propuesta inicial:
+Preferencia de email:
 
 ```json
-{
-  "categories": {
-    "CASES": true,
-    "RESULTS": true,
-    "SYSTEM": true
-  }
-}
+// GET /api/v1/notifications/preferences
+{ "emailForResultsEnabled": false }
+
+// PUT /api/v1/notifications/preferences/email
+{ "enabled": true }
 ```
 
-Hay que definir qué canales controlan estas preferencias: la bandeja interna, el correo electrónico u otros canales. Una preferencia de categoría no debe borrar notificaciones ya persistidas; determina qué avisos generar o por qué canal enviarlos según la regla que se acuerde.
+La bandeja `IN_APP` siempre se crea para un resultado publicado. La preferencia solo controla EMAIL y no borra el aviso del inbox. No hay filtros por categoría, filtro `unreadOnly`, marcado masivo ni preferencias para otros tipos/canales en el API actual.
 
-La vista `/configuracion` también muestra preferencias de correo (`emailNotifications`, `resultReminders`, `securityAlerts`), mientras esta vista muestra preferencias por categoría (`CASES`, `RESULTS`, `SYSTEM`). Son dos modelos distintos en la interfaz; decidir si se unifican en una sola configuración por canal/categoría o se mantienen separados para que el usuario no vea opciones contradictorias.
+## Modelo y significado de estados
 
-## Requisitos para el backend
+- `activity_event` conserva el hecho `RESULT_PUBLISHED` con su actor, fecha, caso, resultado y clave de deduplicación.
+- `notification_outbox` conserva la intención durable de crear el aviso. Sus estados `PENDING`, `PROCESSING`, `COMPLETED` y `FAILED` describen el procesamiento del outbox, no la lectura ni el envío.
+- `notification_inbox` guarda un aviso por destinatario. La restricción por `source_event_key` y destinatario evita duplicados; `read_at` representa la lectura.
+- `notification_channel_delivery` guarda un estado independiente por aviso y canal. `IN_APP` pasa a `DELIVERED` cuando se materializa en la bandeja. EMAIL en el backend puede estar `PENDING`, `PROCESSING`, `SENT`, `FAILED` o `SKIPPED`.
+- Para EMAIL, `SENT` significa únicamente que SQS aceptó el mensaje; no confirma que Lambda lo procesó ni que SES lo entregó. `FAILED` refleja un fallo al publicar a SQS desde el worker, no errores posteriores del consumidor/SES. `DELIVERED` requiere un acuse verificable del proveedor; aún no está conectado. `SKIPPED` indica canal deshabilitado o no aplicable, no un error.
+- `technical_operation_event` registra fallos/reintentos del worker de forma técnica y separada; no es un estado de notificación visible al paciente.
 
-- Persistir destinatario, tipo, categoría, datos del evento, `createdAt` y `readAt`.
-- Crear notificaciones a partir de eventos de casos y resultados. El envío actual de un evento de resultado a SQS no crea por sí mismo una notificación consultable.
-- Deduplicar la creación ante reintentos de eventos, usando un identificador idempotente del evento de origen.
-- Autorizar todas las lecturas y cambios por el usuario autenticado.
-- Definir retención y paginación de notificaciones.
-- Persistir las preferencias del usuario y aclarar su alcance por canal.
+## Reintentos y límites pendientes
 
-## Estado actual del proyecto
+- El worker backend reintenta la publicación a SQS ante timeout/fallo temporal hasta cinco intentos lógicos, con pausas de 30, 60, 120 y 240 segundos. Errores permanentes, de configuración o serialización terminan sin reintento; el quinto error temporal deja EMAIL en `FAILED`.
+- Tras la aceptación por SQS, Lambda devuelve fallos por mensaje para redelivery; al capturar un error del sender libera el `eventId`, de modo que un nuevo intento puede volver a procesarse. Un procesamiento ya reclamado se reconoce como duplicado. Si Lambda se interrumpe abruptamente entre reclamar y liberar/completar, la fila DynamoDB carece de lease/TTL y el redelivery podría descartarse; está pendiente corregir esa ventana.
+- El handler no define el agotamiento de SQS. La DLQ, `maxReceiveCount`, `ReportBatchItemFailures` y `visibilityTimeout` deben configurarse en la cola desplegada. El repositorio no tiene IaC para confirmar esos valores. `HEALTHDOCS_EMAIL_MAX_RETRIES` figura en la configuración Lambda, pero no se consume por el sender.
+- No se recibe acuse final de SES/proveedor y los errores posteriores a la aceptación no vuelven al backend. Por eso un aviso puede seguir mostrando `SENT` aunque falle el envío final; no se debe interpretar como `DELIVERED`.
 
-- La pantalla `/notificaciones` usa datos y estado local de ejemplo; al pulsar una tarjeta solo cambia la lectura en memoria.
-- La interfaz incluye el ejemplo “Resultado consultado” (`RESULT_VIEWED`), además de eventos `CASE_CREATED`, `CASE_STATUS_CHANGED`, archivo recibido y `WELCOME`; esos tipos son de presentación y todavía no están asociados a eventos persistidos.
-- No hay endpoint de listado de bandeja, marcado de lectura ni preferencias persistentes.
-- El backend publica un evento de disponibilidad de resultado, pero no mantiene una bandeja de notificaciones del paciente.
+No incluir en la notificación nombres de archivo, contenido clínico, motivos libres ni cuerpos de email. La pantalla debe traducir `type` a etiquetas neutrales y mantener lectura separada del estado de entrega por canal.
+
+## Comportamiento de la interfaz
+
+- La lista consulta el API real, muestra carga, error con reintento y un estado vacío cuando no hay avisos.
+- Cada aviso muestra un texto neutral derivado del tipo y una acción individual para marcarlo como leído. La fecha `readAt` del API actualiza el estado en la fila.
+- El enlace usa `caseReferenceCode` y abre `/mis_casos/{caseReferenceCode}`. El listado y el detalle verifican acceso del paciente al caso.
+- La pantalla no ofrece filtros no soportados, marcado masivo ni preferencias por categoría/canal. “Actividad reciente” sigue siendo una sección separada.
+
+## Próximos trabajos
+
+- Añadir el acuse final de email antes de mostrar o reportar `DELIVERED` para ese canal.
+- Diseñar un evento fuente real antes de enviar un aviso de respuesta requerida por cambio de insumos.
+- Corregir la deduplicación de Lambda para recuperar reclamos abandonados y versionar/verificar la política SQS/DLQ en el despliegue.
+
+## Verificación de interfaz y contrato
+
+- Pruebas focalizadas de `NotificationsPage`: carga, error/reintento, lista vacía, navegación a `/mis_casos/{caseReferenceCode}`, marcado de lectura y error de marcado. **5 pruebas pasaron** el 2026-10-24.
+- `npm run build` (TypeScript y Vite) pasó el 2026-10-24. TypeScript excluye `src/__tests__` y `src/pages/xlegacy`, que contienen pruebas/componentes antiguos con imports obsoletos; los wrappers del dashboard usan ahora las páginas vigentes.
+- El contrato OpenAPI describe las rutas, permisos de paciente habilitado, payload mínimo y semántica de `SENT`/`DELIVERED`; YAML parseado correctamente el 2026-10-24.
+- La suite frontend completa sigue con fallos en pruebas heredadas y no se considera totalmente verde; la suite enfocada a notificaciones sí pasó. Ver el resultado de la suite al cerrar este paso en `docs/plan-actividad-y-notificaciones.md`.

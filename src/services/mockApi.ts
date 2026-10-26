@@ -1,6 +1,7 @@
 import {
   AcceptConsentRequest,
   CaseSummary,
+  CaseDetails,
   CompleteUploadResponse,
   ConsentRecord,
   CreateCaseRequest,
@@ -13,6 +14,8 @@ import {
   PatientResult,
   UserProfile,
 } from '../types/api';
+import type { PatientCasesQuery, PatientCasesResponse } from '../types/patientCases';
+import type { ResearcherAcademicCaseDetail } from '../types/academicCases';
 
 /**
  * Credenciales de prueba alineadas con el backend.
@@ -71,12 +74,22 @@ export const QUICK_LOGIN_CREDENTIALS: Array<{
 interface MockDatabase {
   uploadInitiators: Record<string, string>;
   uploadExpiresAt: Record<string, string>;
+  activeUploadByCase: Record<string, string>;
+  uploadedInputFiles: Record<string, boolean>;
+  confirmedInputFiles: Record<string, boolean>;
+  caseCreations: Record<string, { request: string; caseId: string }>;
   cases: Array<{
     id: string;
     patientId: string;
     status: CaseSummary['status'];
     referenceCode: string;
     studyName: string;
+    additionalReference?: string | null;
+    originInstitution?: string | null;
+    studyDate?: string | null;
+    notes?: string | null;
+    creationStage?: CaseDetails["creationStage"];
+    acceptedTermsVersions?: string[];
     createdAt: string;
     assignedUserIds: string[];
     files: FileSummary[];
@@ -104,6 +117,10 @@ function getInitialDatabase(): MockDatabase {
   return {
     uploadInitiators: {},
     uploadExpiresAt: {},
+    activeUploadByCase: {},
+    uploadedInputFiles: {},
+    confirmedInputFiles: {},
+    caseCreations: {},
     cases: [
       {
         id: case1Id,
@@ -173,6 +190,10 @@ function loadDb(): MockDatabase {
         cases: db.cases ?? [],
         uploadInitiators: db.uploadInitiators ?? {},
         uploadExpiresAt: db.uploadExpiresAt ?? {},
+        activeUploadByCase: db.activeUploadByCase ?? {},
+        uploadedInputFiles: db.uploadedInputFiles ?? {},
+        confirmedInputFiles: db.confirmedInputFiles ?? {},
+        caseCreations: db.caseCreations ?? {},
       };
     }
   } catch {
@@ -296,27 +317,80 @@ export const mockBackendService = {
     return found.user;
   },
 
-  async createCase(token: string, request: CreateCaseRequest): Promise<CaseSummary> {
+  async createCase(
+    token: string,
+    request: CreateCaseRequest,
+    idempotencyKey?: string,
+  ): Promise<CaseSummary> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
     if (parsed.role !== 'patient') {
       throw new MockHttpError(403, 'FORBIDDEN', 'Solo el rol paciente puede crear casos');
     }
 
+    const todayParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const todayValues = Object.fromEntries(todayParts.map(({ type, value }) => [type, value]));
+    const today = `${todayValues.year}-${todayValues.month}-${todayValues.day}`;
+    const parsedStudyDate = request.studyDate ? new Date(`${request.studyDate}T00:00:00`) : null;
+    if (!request.studyName?.trim() || request.studyName.trim().length > 200
+      || !request.originInstitution?.trim() || request.originInstitution.trim().length > 200
+      || !request.studyDate || Number.isNaN(parsedStudyDate?.getTime()) || request.studyDate > today
+      || (request.additionalReference?.trim().length ?? 0) > 100
+      || (request.notes?.length ?? 0) > 500) {
+      throw new MockHttpError(400, 'VALIDATION_ERROR', 'Revisa los datos y límites del formulario del caso');
+    }
+
     const db = loadDb();
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const normalizedRequest = JSON.stringify({
+      studyName: request.studyName.trim(),
+      additionalReference: request.additionalReference?.trim() || null,
+      originInstitution: request.originInstitution.trim(),
+      studyDate: request.studyDate,
+      notes: request.notes?.trim() || null,
+      creationStage: "CONSENT_PENDING",
+      acceptedTermsVersions: [],
+    });
+    const priorCreation = idempotencyKey ? db.caseCreations[idempotencyKey] : undefined;
+    if (priorCreation) {
+      if (priorCreation.request !== normalizedRequest) {
+        throw new MockHttpError(409, 'CONFLICT', 'Idempotency-Key ya utilizada con otro contenido');
+      }
+      const existingCase = db.cases.find((item) => item.id === priorCreation.caseId);
+      if (existingCase) {
+        return {
+          id: existingCase.id,
+          referenceCode: existingCase.referenceCode,
+          status: existingCase.status,
+          studyName: existingCase.studyName,
+          createdAt: existingCase.createdAt,
+        };
+      }
+    }
+    const referenceDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const newCase = {
       id: crypto.randomUUID(),
       patientId: parsed.sub,
       status: 'CREATED' as const,
-      referenceCode: `CAS-${today}-${String(db.cases.length + 1).padStart(4, '0')}`,
-      studyName: request.studyName,
+      referenceCode: `CAS-${referenceDate}-${String(db.cases.length + 1).padStart(4, '0')}`,
+      studyName: request.studyName.trim(),
+      additionalReference: request.additionalReference?.trim() || null,
+      originInstitution: request.originInstitution.trim(),
+      studyDate: request.studyDate,
+      notes: request.notes?.trim() || null,
       createdAt: new Date().toISOString(),
       assignedUserIds: ['b0000003-0000-0000-0000-000000000003'], // Coordinador preasignado en demo
       files: [],
     };
 
     db.cases.unshift(newCase);
+    if (idempotencyKey) {
+      db.caseCreations[idempotencyKey] = { request: normalizedRequest, caseId: newCase.id };
+    }
     saveDb(db);
 
     return {
@@ -347,6 +421,16 @@ export const mockBackendService = {
     if (!req.termsVersion || req.termsVersion.trim() !== '1.0') {
       throw new MockHttpError(400, 'VALIDATION_ERROR', 'Versión de términos inválida');
     }
+    if (targetCase.creationStage !== "CONSENT_PENDING") {
+      throw new MockHttpError(409, 'CONFLICT', 'El caso no está pendiente de consentimiento');
+    }
+    targetCase.acceptedTermsVersions ??= [];
+    if (targetCase.acceptedTermsVersions.includes(req.termsVersion)) {
+      throw new MockHttpError(409, 'CONFLICT', 'El consentimiento ya fue aceptado para esta versión');
+    }
+    targetCase.acceptedTermsVersions.push(req.termsVersion);
+    targetCase.creationStage = "FILE_PENDING";
+    saveDb(db);
 
     return {
       id: crypto.randomUUID(),
@@ -375,6 +459,101 @@ export const mockBackendService = {
       }));
   },
 
+  async getCaseDetails(token: string, caseId: string): Promise<CaseDetails> {
+    await new Promise((r) => setTimeout(r, 100));
+    const parsed = verifyMockToken(token);
+    const targetCase = loadDb().cases.find((c) => c.id === caseId);
+    if (!targetCase || targetCase.patientId !== parsed.sub) {
+      throw new MockHttpError(404, 'NOT_FOUND', 'Caso no encontrado');
+    }
+    const creationStage = targetCase.creationStage
+      ?? (targetCase.status === "CREATED" ? "CONSENT_PENDING" : null);
+    return {
+      id: targetCase.id,
+      referenceCode: targetCase.referenceCode,
+      status: creationStage ?? targetCase.status,
+      studyName: targetCase.studyName,
+      additionalReference: targetCase.additionalReference ?? null,
+      originInstitution: targetCase.originInstitution ?? null,
+      studyDate: targetCase.studyDate ?? null,
+      notes: targetCase.notes ?? null,
+      createdAt: targetCase.createdAt,
+      updatedAt: targetCase.createdAt,
+      creationStage,
+      availableResultId: null,
+    };
+  },
+
+  async getPatientCases(token: string, query: PatientCasesQuery = {}): Promise<PatientCasesResponse> {
+    await new Promise((r) => setTimeout(r, 100));
+    const parsed = verifyMockToken(token);
+    const db = loadDb();
+    const normalizedQuery = query.q?.trim().toLocaleLowerCase() ?? "";
+    const matching = db.cases
+      .filter((item) => item.patientId === parsed.sub)
+      .filter((item) => !normalizedQuery || `${item.referenceCode} ${item.studyName}`.toLocaleLowerCase().includes(normalizedQuery));
+    const bucket = (item: (typeof db.cases)[number]) => {
+      if (item.creationStage || item.status === "CREATED" || item.status === "FILES_RECEIVED") return "PENDING";
+      if (item.status === "RESULT_AVAILABLE") return "RESULT_AVAILABLE";
+      return "IN_PROGRESS";
+    };
+    const statusCounts = {
+      ALL: matching.length,
+      PENDING: matching.filter((item) => bucket(item) === "PENDING").length,
+      IN_PROGRESS: matching.filter((item) => bucket(item) === "IN_PROGRESS").length,
+      RESULT_AVAILABLE: matching.filter((item) => bucket(item) === "RESULT_AVAILABLE").length,
+    };
+    const filtered = query.status
+      ? matching.filter((item) => bucket(item) === query.status)
+      : matching;
+    const sort = query.sort ?? "createdAt:desc";
+    filtered.sort((a, b) => sort === "createdAt:asc"
+      ? a.createdAt.localeCompare(b.createdAt)
+      : b.createdAt.localeCompare(a.createdAt));
+    const page = Math.max(0, query.page ?? 0);
+    const size = Math.max(1, query.size ?? 10);
+    const items = filtered.slice(page * size, (page + 1) * size).map((item) => ({
+      id: item.id,
+      referenceCode: item.referenceCode,
+      studyName: item.studyName,
+      status: item.status,
+      creationStage: item.creationStage ?? (item.status === "CREATED" ? "CONSENT_PENDING" as const : null),
+      createdAt: item.createdAt,
+      updatedAt: item.createdAt,
+      availableResultId: item.result?.isAvailable ? item.result.id : null,
+    }));
+    return {
+      items,
+      page,
+      size,
+      totalItems: filtered.length,
+      totalPages: Math.ceil(filtered.length / size),
+      statusCounts,
+      appliedFilters: { q: query.q?.trim() ?? "", status: query.status ?? "ALL", sort },
+    };
+  },
+
+  async submitCase(token: string, caseId: string): Promise<void> {
+    await new Promise((r) => setTimeout(r, 120));
+    const parsed = verifyMockToken(token);
+    if (parsed.role !== "patient") {
+      throw new MockHttpError(403, "FORBIDDEN", "Solo paciente propietario puede enviar el caso");
+    }
+    const db = loadDb();
+    const targetCase = db.cases.find((item) => item.id === caseId);
+    if (!targetCase || targetCase.patientId !== parsed.sub) {
+      throw new MockHttpError(404, "NOT_FOUND", "Caso no encontrado");
+    }
+    if (targetCase.creationStage !== "CONFIRMATION_PENDING"
+      || !targetCase.acceptedTermsVersions?.length
+      || !targetCase.files.some((file) => file.fileKind === "INPUT" && db.confirmedInputFiles[file.id])) {
+      throw new MockHttpError(409, "CONFLICT", "El caso aún no está listo para enviarse");
+    }
+    targetCase.status = "FILES_RECEIVED";
+    targetCase.creationStage = null;
+    saveDb(db);
+  },
+
   async createInputUpload(
     token: string,
     caseId: string,
@@ -392,6 +571,21 @@ export const mockBackendService = {
       throw new MockHttpError(403, 'FORBIDDEN', 'No autorizado para este caso');
     }
 
+    const activeFileId = db.activeUploadByCase[caseId];
+    if (activeFileId) {
+      const activeExpiry = Date.parse(db.uploadExpiresAt[activeFileId] ?? "");
+      if (Number.isFinite(activeExpiry) && activeExpiry > Date.now()) {
+        throw new MockHttpError(409, 'CONFLICT', 'Ya existe una intención de carga vigente para este caso');
+      }
+      delete db.activeUploadByCase[caseId];
+    }
+    if (targetCase.creationStage !== "FILE_PENDING" && targetCase.creationStage !== "CONFIRMATION_PENDING") {
+      throw new MockHttpError(409, 'CONFLICT', 'El caso no está listo para recibir archivos');
+    }
+    if (!req.originalFilename?.trim() || !req.contentType?.trim() || !Number.isFinite(req.sizeBytes) || req.sizeBytes <= 0) {
+      throw new MockHttpError(400, 'VALIDATION_ERROR', 'El archivo requiere nombre, tipo de contenido y tamaño positivo');
+    }
+
     const fileId = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const file: FileSummary = {
@@ -405,6 +599,7 @@ export const mockBackendService = {
     targetCase.files.push(file);
     db.uploadInitiators[fileId] = parsed.sub;
     db.uploadExpiresAt[fileId] = expiresAt;
+    db.activeUploadByCase[caseId] = fileId;
     saveDb(db);
 
     return {
@@ -414,11 +609,46 @@ export const mockBackendService = {
     };
   },
 
+  async uploadInputFile(token: string, fileId: string, browserFile: File): Promise<void> {
+    await new Promise((r) => setTimeout(r, 120));
+    const parsed = verifyMockToken(token);
+    const db = loadDb();
+    const alreadyConfirmedCase = db.cases.find((c) =>
+      c.patientId === parsed.sub && c.files.some((file) => file.id === fileId) && db.confirmedInputFiles[fileId],
+    );
+    if (alreadyConfirmedCase) return;
+    const ownerId = db.uploadInitiators[fileId];
+    if (!ownerId || ownerId !== parsed.sub) {
+      throw new MockHttpError(403, 'FORBIDDEN', 'No autorizado para esta carga');
+    }
+    const expiresAt = Date.parse(db.uploadExpiresAt[fileId] ?? "");
+    if (!Number.isFinite(expiresAt) || Date.now() >= expiresAt) {
+      throw new MockHttpError(409, 'CONFLICT', 'La URL temporal de carga expiró');
+    }
+    const targetCase = db.cases.find((c) => c.files.some((file) => file.id === fileId));
+    const targetFile = targetCase?.files.find((file) => file.id === fileId);
+    if (!targetCase || targetCase.patientId !== parsed.sub || !targetFile || targetFile.fileKind !== 'INPUT') {
+      throw new MockHttpError(404, 'NOT_FOUND', 'Archivo no encontrado');
+    }
+    if (browserFile.size !== targetFile.sizeBytes) {
+      throw new MockHttpError(400, 'VALIDATION_ERROR', 'El tamaño del archivo no coincide con la intención');
+    }
+    db.uploadedInputFiles[fileId] = true;
+    saveDb(db);
+  },
+
   async completeUpload(token: string, fileId: string): Promise<CompleteUploadResponse> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
 
     const db = loadDb();
+    for (const c of db.cases) {
+      const confirmed = c.files.find((file) => file.id === fileId);
+      if (confirmed && db.confirmedInputFiles[fileId]) {
+        if (c.patientId !== parsed.sub) throw new MockHttpError(403, 'FORBIDDEN', 'No es propietario del caso');
+        return { file: confirmed, caseStatus: c.status };
+      }
+    }
     let foundFile: FileSummary | null = null;
     let foundCase: (typeof db.cases)[number] | null = null;
 
@@ -440,7 +670,16 @@ export const mockBackendService = {
           if (c.patientId !== parsed.sub) {
             throw new MockHttpError(403, 'FORBIDDEN', 'No es propietario del caso');
           }
-          c.status = 'FILES_RECEIVED';
+          if (!db.uploadedInputFiles[fileId]) {
+            throw new MockHttpError(409, 'CONFLICT', 'El archivo todavía no fue cargado');
+          }
+          if (c.creationStage !== "FILE_PENDING" && c.creationStage !== "CONFIRMATION_PENDING") {
+            throw new MockHttpError(409, 'CONFLICT', 'El caso no está listo para confirmar archivos');
+          }
+          c.creationStage = "CONFIRMATION_PENDING";
+          db.confirmedInputFiles[fileId] = true;
+          delete db.uploadedInputFiles[fileId];
+          delete db.activeUploadByCase[c.id];
         } else if (f.fileKind === 'RESULT') {
           if (!c.assignedUserIds.includes(parsed.sub)) {
             throw new MockHttpError(403, 'FORBIDDEN', 'Usuario no habilitado para este caso');
@@ -512,8 +751,8 @@ export const mockBackendService = {
   async listAssignedCases(token: string): Promise<InternalCaseSummary[]> {
     await new Promise((r) => setTimeout(r, 150));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'researcher' && parsed.role !== 'coordinator') {
-      throw new MockHttpError(403, 'FORBIDDEN', 'Solo usuarios internos autorizados');
+    if (parsed.role !== 'researcher') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo investigadores pueden consultar sus casos asignados');
     }
 
     const db = loadDb();
@@ -521,7 +760,14 @@ export const mockBackendService = {
       .filter(
         (c) =>
           c.assignedUserIds.includes(parsed.sub) &&
-          ['ENABLED_FOR_PROCESSING', 'RESULT_UPLOADED', 'RESULT_AVAILABLE'].includes(c.status) &&
+          [
+            'FILES_RECEIVED',
+            'INPUT_CHANGE_DRAFT',
+            'INPUT_CHANGE_REVIEW',
+            'ENABLED_FOR_PROCESSING',
+            'RESULT_UPLOADED',
+            'RESULT_AVAILABLE',
+          ].includes(c.status) &&
           c.files.some((file) => file.fileKind === 'INPUT')
       )
       .map((c) => ({
@@ -530,6 +776,7 @@ export const mockBackendService = {
         status: c.status,
         studyName: c.studyName,
         createdAt: c.createdAt,
+        updatedAt: c.result?.availableAt ?? c.result?.uploadedAt ?? c.createdAt,
         files: c.files,
         result: c.result
           ? {
@@ -542,6 +789,66 @@ export const mockBackendService = {
             }
           : undefined,
       }));
+  },
+
+  async getAssignedCaseDetail(token: string, caseId: string): Promise<ResearcherAcademicCaseDetail> {
+    await new Promise((r) => setTimeout(r, 120));
+    const parsed = verifyMockToken(token);
+    if (parsed.role !== 'researcher') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo investigadores pueden consultar el detalle de sus casos');
+    }
+    const db = loadDb();
+    const item = db.cases.find((candidate) => candidate.id === caseId
+      && candidate.assignedUserIds.includes(parsed.sub)
+      && ['FILES_RECEIVED', 'INPUT_CHANGE_DRAFT', 'INPUT_CHANGE_REVIEW', 'ENABLED_FOR_PROCESSING', 'RESULT_UPLOADED', 'RESULT_AVAILABLE'].includes(candidate.status)
+      && candidate.files.some((file) => file.fileKind === 'INPUT'));
+    if (!item) throw new MockHttpError(404, 'NOT_FOUND', 'Caso no encontrado');
+
+    const latestUpdate = item.result?.availableAt ?? item.result?.uploadedAt ?? item.createdAt;
+    const resultFile = item.result && item.files.find((file) => file.fileKind === 'RESULT');
+    return {
+      case: {
+        id: item.id,
+        referenceCode: item.referenceCode,
+        status: item.status as ResearcherAcademicCaseDetail['case']['status'],
+        studyName: item.studyName,
+        additionalReference: item.additionalReference ?? null,
+        originInstitution: item.originInstitution ?? null,
+        studyDate: item.studyDate ?? null,
+        notes: item.notes ?? null,
+        createdAt: item.createdAt,
+        updatedAt: latestUpdate,
+        receivedAt: item.createdAt,
+        availableResultId: item.result?.isAvailable ? item.result.id : null,
+      },
+      inputFiles: item.files.filter((file) => file.fileKind === 'INPUT').map((file) => ({
+        id: file.id,
+        originalFilename: file.originalFilename,
+        contentType: file.contentType ?? null,
+        sizeBytes: file.sizeBytes,
+        uploadedAt: item.createdAt,
+      })),
+      researchers: item.assignedUserIds.map((userId) => ({
+        userId,
+        fullName: userId === parsed.sub ? 'Tú (investigador asignado)' : null,
+        researcherCode: null,
+        authorizationStatus: 'AUTHORIZED',
+        assignedAt: item.createdAt,
+      })),
+      results: item.result ? [{
+        id: item.result.id,
+        originalFilename: resultFile?.originalFilename ?? 'resultado',
+        contentType: resultFile?.contentType ?? null,
+        sizeBytes: resultFile?.sizeBytes ?? null,
+        uploadedAt: item.result.uploadedAt ?? null,
+        updatedAt: latestUpdate,
+        version: 1,
+        status: item.result.isAvailable ? 'AVAILABLE' : 'UPLOADED',
+        correctionRequest: null,
+        publicationType: item.result.isAvailable ? 'INITIAL' : null,
+        availableAt: item.result.availableAt ?? null,
+      }] : [],
+    };
   },
 
   async createInputDownload(
@@ -569,6 +876,24 @@ export const mockBackendService = {
 
     return {
       downloadUrl: `https://storage.healthdocs.local/downloads/${fileId}?file=${encodeURIComponent(f.originalFilename)}`,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    };
+  },
+
+  async createPatientInputDownload(
+    token: string,
+    caseId: string,
+    fileId: string,
+  ): Promise<DownloadIntent> {
+    await new Promise((r) => setTimeout(r, 200));
+    const parsed = verifyMockToken(token);
+    const c = loadDb().cases.find((item) => item.id === caseId && item.patientId === parsed.sub);
+    const file = c?.files.find((item) => item.id === fileId && item.fileKind === 'INPUT');
+    if (!c || !file) {
+      throw new MockHttpError(404, 'NOT_FOUND', 'Archivo no encontrado en el caso');
+    }
+    return {
+      downloadUrl: `https://storage.healthdocs.local/downloads/${fileId}?file=${encodeURIComponent(file.originalFilename)}`,
       expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     };
   },
@@ -601,11 +926,11 @@ export const mockBackendService = {
     return createTemporaryResultDownload(c.id, c.result.id);
   },
 
-  async deleteResult(token: string, caseId: string, resultId: string): Promise<void> {
+  async deleteResult(token: string, caseId: string, resultId: string, reason: string): Promise<void> {
     await new Promise((r) => setTimeout(r, 200));
     const parsed = verifyMockToken(token);
-    if (parsed.role !== 'researcher' && parsed.role !== 'coordinator') {
-      throw new MockHttpError(403, 'FORBIDDEN', 'Permisos insuficientes');
+    if (parsed.role !== 'researcher') {
+      throw new MockHttpError(403, 'FORBIDDEN', 'Solo el investigador asignado puede eliminar una carga pendiente');
     }
 
     const db = loadDb();
@@ -616,8 +941,8 @@ export const mockBackendService = {
     if (!c.result || c.result.id !== resultId) {
       throw new MockHttpError(404, 'NOT_FOUND', 'Resultado no encontrado en el caso');
     }
-    if (c.result.isAvailable) {
-      throw new MockHttpError(409, 'CONFLICT', 'Published results cannot be deleted');
+    if (c.result.isAvailable || c.status !== 'RESULT_UPLOADED' || !reason.trim()) {
+      throw new MockHttpError(409, 'CONFLICT', 'Solo se puede retirar un resultado pendiente de revisión con un motivo');
     }
 
     c.files = c.files.filter((file) => file.fileKind !== 'RESULT');
