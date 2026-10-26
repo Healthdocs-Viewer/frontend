@@ -3,7 +3,6 @@ import { useAuth } from "../context/AuthContext";
 
 export const ProtectedRoute = () => {
   const { user, token, isLoading } = useAuth();
-  console.log("Hi from protected route");
 
   if (isLoading) {
     return (
@@ -16,6 +15,5 @@ export const ProtectedRoute = () => {
   if (!token || !user) {
     return <Navigate to="/login" replace />;
   }
-
   return <Outlet />;
 };

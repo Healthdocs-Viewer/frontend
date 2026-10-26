@@ -122,7 +122,13 @@ export const PatientDashboard: React.FC = () => {
     setIsBusy(true);
     setFlowError(null);
     try {
-      const created = await apiClient.patient.createCase({ studyName });
+      const now = new Date();
+      const studyDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const created = await apiClient.patient.createCase({
+        studyName,
+        originInstitution: 'Centro de prueba',
+        studyDate,
+      });
       setCurrentCase(created);
       setCases((prev) => [created, ...prev.filter((item) => item.id !== created.id)]);
       setSelectedCaseId(created.id);

@@ -291,7 +291,11 @@ describe('Token inválido o expirado', () => {
     });
 
     await expect(
-      mockBackendService.createCase(expiredToken, { studyName: 'Radiografía de tórax' })
+      mockBackendService.createCase(expiredToken, {
+        studyName: 'Radiografía de tórax',
+        originInstitution: 'Centro de prueba',
+        studyDate: '2026-09-15',
+      })
     ).rejects.toMatchObject({
       status: 401,
       code: 'UNAUTHORIZED',

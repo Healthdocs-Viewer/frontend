@@ -6,7 +6,7 @@ import { InternalCaseDetail } from '../../components/internal/InternalCaseDetail
 import { ResultUploadCard } from '../../components/internal/ResultUploadCard';
 import { RefreshCw, GraduationCap } from 'lucide-react';
 
-export const StudentDashboard: React.FC = () => {
+export const ResearcherDashboard: React.FC = () => {
   const [cases, setCases] = useState<InternalCaseSummary[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [isLoadingCases, setIsLoadingCases] = useState<boolean>(true);

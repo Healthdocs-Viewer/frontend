@@ -135,7 +135,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (credentials: LoginRequest) => {
     setIsLoading(true);
     try {
-      console.log(credentials);
       const session = await authService.login(credentials);
       setToken(session.accessToken);
       if (authService.usesSupabaseAuth) {

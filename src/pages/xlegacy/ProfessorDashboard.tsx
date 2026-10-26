@@ -28,7 +28,7 @@ export const ProfessorDashboard: React.FC = () => {
   const [pendingCaseLoadError, setPendingCaseLoadError] = useState<string | null>(null);
 
   // Estados de Asignación de Estudiantes (POST /operations/cases/{caseId}/assignments)
-  const [studentUserId, setStudentUserId] = useState<string>(DEV_STUDENT_UUID);
+  const [researcherUserId, setResearcherUserId] = useState<string>(DEV_STUDENT_UUID);
   const [isAssigning, setIsAssigning] = useState<boolean>(false);
   const [assignSuccessMsg, setAssignSuccessMsg] = useState<string | null>(null);
   const [assignErrorMsg, setAssignErrorMsg] = useState<string | null>(null);
@@ -88,17 +88,17 @@ export const ProfessorDashboard: React.FC = () => {
   const selectedCase = selectedPendingCase || selectedAssignedCase;
 
   // 1. Acción de Profesor: Asignar Estudiantes (POST /operations/cases/{caseId}/assignments)
-  const handleAssignStudent = async (e: React.FormEvent) => {
+  const handleAssignResearcher = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCase || !studentUserId || isAssigning) return;
+    if (!selectedCase || !researcherUserId || isAssigning) return;
 
     setIsAssigning(true);
     setAssignSuccessMsg(null);
     setAssignErrorMsg(null);
 
     try {
-      await apiClient.operations.assignCase(selectedCase.id, studentUserId);
-      setAssignSuccessMsg(`Estudiante habilitado con éxito para el caso (${studentUserId}).`);
+      await apiClient.operations.assignCase(selectedCase.id, researcherUserId);
+      setAssignSuccessMsg(`Estudiante habilitado con éxito para el caso (${researcherUserId}).`);
       await Promise.all([fetchPendingCases(), fetchCases()]);
     } catch (err: any) {
       console.error('Error al asignar caso:', err);
@@ -250,7 +250,7 @@ export const ProfessorDashboard: React.FC = () => {
                     </div>
                   )}
 
-                  <form onSubmit={handleAssignStudent} className="space-y-3">
+                  <form onSubmit={handleAssignResearcher} className="space-y-3">
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
                         ID de Usuario del Estudiante (UUID)
@@ -258,9 +258,9 @@ export const ProfessorDashboard: React.FC = () => {
                       <input
                         type="text"
                         required
-                        data-testid="student-userid-input"
-                        value={studentUserId}
-                        onChange={(e) => setStudentUserId(e.target.value)}
+                        data-testid="researcher-userid-input"
+                        value={researcherUserId}
+                        onChange={(e) => setResearcherUserId(e.target.value)}
                         placeholder="00000000-0000-0000-0000-000000000002"
                         className="block w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
@@ -270,7 +270,7 @@ export const ProfessorDashboard: React.FC = () => {
                       <button
                         type="submit"
                         data-testid="submit-assign-button"
-                        disabled={isAssigning || !studentUserId}
+                        disabled={isAssigning || !researcherUserId}
                         className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" />
