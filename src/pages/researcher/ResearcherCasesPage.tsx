@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ArrowUp,
   CheckCircle2,
+  CircleDot,
   FileText,
   Search,
   Clock3,
@@ -23,24 +24,33 @@ const statusConfig: Record<
   AcademicCaseStatus,
   {
     label: string;
-    variant: "info" | "success";
+    variant: "info" | "success" | "warning";
     icon: typeof FileText;
   }
 > = {
+  FILES_RECEIVED: { label: "Archivos recibidos", variant: "info", icon: CircleDot },
+  INPUT_CHANGE_DRAFT: { label: "Cambio en edición", variant: "warning", icon: Clock3 },
+  INPUT_CHANGE_REVIEW: { label: "Cambio pendiente de revisión", variant: "warning", icon: Clock3 },
   ENABLED_FOR_PROCESSING: { label: "En procesamiento", variant: "info", icon: Clock3 },
   RESULT_UPLOADED: { label: "Resultado cargado", variant: "success", icon: CheckCircle2 },
   RESULT_AVAILABLE: { label: "Disponible para el paciente", variant: "success", icon: FileText },
 };
 
 const filters: AcademicCaseStatus[] = [
+  "FILES_RECEIVED",
+  "INPUT_CHANGE_DRAFT",
+  "INPUT_CHANGE_REVIEW",
   "ENABLED_FOR_PROCESSING",
   "RESULT_UPLOADED",
   "RESULT_AVAILABLE",
 ];
 
-const formatDate = (value: string) => new Intl.DateTimeFormat("es-CO", {
-  day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-}).format(new Date(value));
+const formatDate = (value: string | null) => {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("es-CO", {
+    day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).format(new Date(value));
+};
 
 function normalize(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
@@ -156,6 +166,8 @@ export const ResearcherCasesPage: React.FC = () => {
                       "border-success/20 bg-success/10 text-success",
                     filter === "RESULT_AVAILABLE" &&
                       "border-success/20 bg-success/10 text-success",
+                    (filter === "INPUT_CHANGE_DRAFT" || filter === "INPUT_CHANGE_REVIEW") &&
+                      "border-warning/20 bg-warning/10 text-warning",
                   )}
                 >
                   {statusConfig[filter].label} ({counts[filter]})
@@ -189,7 +201,7 @@ export const ResearcherCasesPage: React.FC = () => {
                   <th scope="col" className="whitespace-nowrap px-3 py-3">
                     Estado
                   </th>
-                  <th scope="col" className="hidden whitespace-nowrap px-3 py-3 md:table-cell">
+                  <th scope="col" className="whitespace-nowrap px-3 py-3">
                     Última actualización
                   </th>
                   <th scope="col" className="whitespace-nowrap px-3 py-3">
@@ -221,13 +233,13 @@ export const ResearcherCasesPage: React.FC = () => {
                           {config.label}
                         </Badge>
                       </td>
-                      <td className="hidden whitespace-nowrap px-3 py-2.5 text-muted md:table-cell">
-                        —
+                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">
+                        {formatDate(item.updatedAt)}
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2">
                           <Link
-                            to={`/casos_academicos/${item.referenceCode}`}
+                            to={`/casos_asignados/${item.referenceCode}`}
                             className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-muted transition-colors hover:border-primary/30 hover:text-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                           >
                             <FileText className="h-4 w-4" aria-hidden="true" />

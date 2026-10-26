@@ -16,7 +16,7 @@ import { ResultSummary } from '../../types/api';
 interface ResultUploadCardProps {
   caseId: string;
   caseStatus?: CaseStatus;
-  onUploadSuccess?: (response: CompleteUploadResponse) => void;
+  onUploadSuccess?: (response: CompleteUploadResponse) => void | Promise<void>;
   disabled?: boolean;
   result?: ResultSummary;
 }
@@ -169,7 +169,7 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
       if (fileInputRef.current) fileInputRef.current.value = '';
 
       if (onUploadSuccess) {
-        onUploadSuccess(completeRes);
+        void onUploadSuccess(completeRes);
       }
     } catch (err: any) {
       console.error('Error durante la carga de resultado:', err);
@@ -197,21 +197,21 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
   return (
     <div
       data-testid="result-upload-card"
-      className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4"
+      className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 text-slate-900 shadow-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
     >
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <UploadCloud className="w-4 h-4 text-sky-600" />
+          <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+            <UploadCloud className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             Cargar Resultado Procesado
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             Asocia el informe diagnóstico, reconstrucción 3D o video procesado para este caso.
           </p>
         </div>
 
         {caseStatus && (
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+          <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
             Estado: {caseStatus}
           </span>
         )}
@@ -220,9 +220,9 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
       {isAlreadyProcessed && (
         <div
           data-testid="already-available-notice"
-          className="p-3 rounded-lg text-xs bg-amber-50 text-amber-900 border border-amber-200 flex items-start gap-2"
+          className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
         >
-          <HelpCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <HelpCircle className="mt-0.5 w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
           <span>
             Este caso ya tiene un resultado publicado y disponible para el paciente. Si cargas uno nuevo, reemplazarás la asociación previa.
           </span>
@@ -230,18 +230,18 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
       )}
 
       {result && (
-        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/40">
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-emerald-900 truncate" title={result.originalFilename}>
+            <p className="truncate text-xs font-semibold text-emerald-900 dark:text-emerald-200" title={result.originalFilename}>
               {result.originalFilename}
             </p>
-            <p className="text-[11px] text-emerald-700">Resultado {result.status === 'AVAILABLE' ? 'publicado' : 'cargado'}</p>
+            <p className="text-[11px] text-emerald-700 dark:text-emerald-300">Resultado {result.status === 'AVAILABLE' ? 'publicado' : 'cargado'}</p>
           </div>
           <button
             type="button"
             data-testid="download-result-button"
             onClick={handleDownloadResult}
-            className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2 rounded-lg flex-shrink-0"
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600"
           >
             <Download className="w-3.5 h-3.5" />
             Descargar resultado
@@ -250,7 +250,7 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
       )}
 
       {disabled && caseStatus !== 'RESULT_AVAILABLE' && (
-        <div className="p-3 rounded-lg text-xs bg-slate-50 text-slate-600 border border-slate-200">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-300">
           Primero debes habilitar el caso para procesamiento. La carga de resultados estará disponible cuando el estado sea
           <strong className="ml-1">ENABLED_FOR_PROCESSING</strong>.
         </div>
@@ -260,16 +260,16 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
       {uploadSuccess && successMessage && (
         <div
           data-testid="upload-success-alert"
-          className="p-3.5 rounded-lg text-xs flex items-start justify-between bg-emerald-50 text-emerald-800 border border-emerald-200 animate-fadeIn"
+          className="flex items-start justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-800 animate-fadeIn dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
         >
           <div className="flex items-start gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <CheckCircle className="mt-0.5 w-4 h-4 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
             <span className="font-medium">{successMessage}</span>
           </div>
           <button
             type="button"
             onClick={() => setUploadSuccess(false)}
-            className="text-emerald-700 hover:text-emerald-900 ml-2"
+            className="ml-2 text-emerald-700 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-100"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -280,16 +280,16 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
       {validationError && (
         <div
           data-testid="upload-validation-alert"
-          className="p-3.5 rounded-lg text-xs flex items-start justify-between bg-amber-50 text-amber-800 border border-amber-200"
+          className="flex items-start justify-between rounded-lg border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
         >
           <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="mt-0.5 w-4 h-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
             <span>{validationError}</span>
           </div>
           <button
             type="button"
             onClick={() => setValidationError(null)}
-            className="text-amber-700 hover:text-amber-900 ml-2"
+            className="ml-2 text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -300,16 +300,16 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
       {uploadError && (
         <div
           data-testid="upload-error-alert"
-          className="p-3.5 rounded-lg text-xs flex items-start justify-between bg-red-50 text-red-800 border border-red-200"
+          className="flex items-start justify-between rounded-lg border border-red-200 bg-red-50 p-3.5 text-xs text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200"
         >
           <div className="flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="mt-0.5 w-4 h-4 flex-shrink-0 text-red-600 dark:text-red-400" />
             <span>{uploadError}</span>
           </div>
           <button
             type="button"
             onClick={() => setUploadError(null)}
-            className="text-red-700 hover:text-red-900 ml-2"
+            className="ml-2 text-red-700 hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -321,10 +321,10 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
         <div
           className={`border-2 border-dashed rounded-xl p-5 text-center transition-all ${
             isUploading || disabled
-              ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
+              ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60 dark:border-slate-700 dark:bg-slate-800/60'
               : selectedFile
-              ? 'border-sky-400 bg-sky-50/30'
-              : 'border-slate-300 hover:border-sky-400 bg-slate-50/40 hover:bg-slate-50'
+              ? 'border-sky-400 bg-sky-50/30 dark:border-sky-500 dark:bg-sky-950/20'
+              : 'border-slate-300 bg-slate-50/40 hover:border-sky-400 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800/30 dark:hover:border-sky-500 dark:hover:bg-slate-800/60'
           }`}
         >
           <input
@@ -339,19 +339,19 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
           />
 
           {selectedFile ? (
-            <div className="flex items-center justify-between p-2 rounded-lg bg-white border border-sky-200 shadow-2xs">
-              <div className="flex items-center gap-3 min-w-0 text-left">
-                <div className="p-2 rounded-lg bg-sky-100 text-sky-700">
+            <div className="flex items-center justify-between rounded-lg border border-sky-200 bg-white p-2 text-left shadow-2xs dark:border-sky-900 dark:bg-slate-900">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="rounded-lg bg-sky-100 p-2 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <p
                     data-testid="selected-file-name"
-                    className="text-xs font-bold text-slate-800 truncate"
+                    className="truncate text-xs font-bold text-slate-800 dark:text-slate-100"
                   >
                     {selectedFile.name}
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">
                     {(selectedFile.size / 1024).toFixed(1)} KB • {selectedFile.type || 'Tipo detectado por extensión'}
                   </p>
                 </div>
@@ -362,7 +362,7 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
                 data-testid="clear-file-button"
                 disabled={isUploading}
                 onClick={handleClearFile}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                 title="Quitar archivo seleccionado"
               >
                 <X className="w-4 h-4" />
@@ -375,11 +375,11 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
                 disabled ? 'cursor-not-allowed' : ''
               }`}
             >
-              <UploadCloud className="w-8 h-8 text-sky-500 mb-2" />
-              <span className="text-xs font-semibold text-sky-700 hover:text-sky-800">
+              <UploadCloud className="mb-2 w-8 h-8 text-sky-500 dark:text-sky-400" />
+              <span className="text-xs font-semibold text-sky-700 hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-200">
                 Haz clic para seleccionar el archivo de resultado
               </span>
-              <span className="text-[11px] text-slate-400 mt-1">
+              <span className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
                 Formatos permitidos: PDF, Video MP4, DICOM o ZIP (Máx. 100 MB)
               </span>
             </label>
@@ -390,9 +390,9 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
         {isUploading && uploadStep && (
           <div
             data-testid="upload-progress-indicator"
-            className="p-3 rounded-lg bg-sky-50 border border-sky-100 text-sky-800 text-xs flex items-center gap-2"
+            className="flex items-center gap-2 rounded-lg border border-sky-100 bg-sky-50 p-3 text-xs text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200"
           >
-            <Loader2 className="w-4 h-4 animate-spin text-sky-600 flex-shrink-0" />
+            <Loader2 className="w-4 h-4 flex-shrink-0 animate-spin text-sky-600 dark:text-sky-400" />
             <span className="font-medium">{uploadStep}</span>
           </div>
         )}
@@ -403,7 +403,7 @@ export const ResultUploadCard: React.FC<ResultUploadCardProps> = ({
             type="submit"
             data-testid="submit-result-button"
             disabled={!selectedFile || isUploading || disabled}
-            className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-sky-700 dark:hover:bg-sky-600"
           >
             {isUploading ? (
               <>

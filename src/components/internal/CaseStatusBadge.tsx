@@ -22,6 +22,18 @@ const STATUS_CONFIG: Record<
     text: 'text-blue-700',
     border: 'border-blue-200',
   },
+  INPUT_CHANGE_DRAFT: {
+    label: 'Solicitud de cambio en edición',
+    bg: 'bg-violet-50',
+    text: 'text-violet-700',
+    border: 'border-violet-200',
+  },
+  INPUT_CHANGE_REVIEW: {
+    label: 'Solicitud de cambio en revisión',
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    border: 'border-amber-300',
+  },
   ENABLED_FOR_PROCESSING: {
     label: 'Habilitado para Procesamiento',
     bg: 'bg-sky-50',
