@@ -95,4 +95,4 @@ No incluir en la notificación nombres de archivo, contenido clínico, motivos l
 - Pruebas focalizadas de `NotificationsPage`: carga, error/reintento, lista vacía, navegación a `/mis_casos/{caseReferenceCode}`, marcado de lectura y error de marcado. **5 pruebas pasaron** el 2026-10-24.
 - `npm run build` (TypeScript y Vite) pasó el 2026-10-24. TypeScript excluye `src/__tests__` y `src/pages/xlegacy`, que contienen pruebas/componentes antiguos con imports obsoletos; los wrappers del dashboard usan ahora las páginas vigentes.
 - El contrato OpenAPI describe las rutas, permisos de paciente habilitado, payload mínimo y semántica de `SENT`/`DELIVERED`; YAML parseado correctamente el 2026-10-24.
-- La suite frontend completa sigue con fallos en pruebas heredadas y no se considera totalmente verde; la suite enfocada a notificaciones sí pasó. Ver el resultado de la suite al cerrar este paso en `docs/plan-actividad-y-notificaciones.md`.
+- En la verificación del 2026-10-24, la suite enfocada a notificaciones pasó; la suite frontend completa aún tenía fallos en pruebas heredadas.

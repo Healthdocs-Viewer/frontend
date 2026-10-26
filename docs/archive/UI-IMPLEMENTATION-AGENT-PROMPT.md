@@ -1,5 +1,7 @@
 # Prompt para agente — Implementación de interfaces Healthdocs
 
+> Archivo histórico. Resume una etapa anterior de implementación; el estado actual del producto se describe en el [README principal](../../README.md) y los contratos se encuentran en el [índice de documentación](../README.md).
+
 ## Prompt
 
 Actúa como un desarrollador frontend senior especializado en React, TypeScript, Tailwind CSS y diseño de interfaces accesibles.
@@ -9,11 +11,11 @@ Implementa las interfaces de Healthdocs a partir de la imagen de referencia que 
 ### Fuentes que debes revisar antes de modificar código
 
 1. Imagen de referencia entregada por el usuario.
-2. `code/frontend/docs/UI-DESIGN-CONTRACT.md`.
-3. `code/frontend/docs/PROFESSOR-TEACHING-CONTRACT.md`.
-4. `code/frontend/docs/STUDENT-IMPLEMENTATION-CONTRACT.md`.
-5. `code/frontend/docs/PROFESSOR-SCREEN-SPEC.md`.
-6. `code/frontend/docs/STUDENT-SCREEN-SPEC.md`.
+2. `code/frontend/docs/design/UI-DESIGN-CONTRACT.md`.
+3. `code/frontend/docs/roles/coordinador/PROFESSOR-TEACHING-CONTRACT.md`.
+4. `code/frontend/docs/roles/investigador/STUDENT-IMPLEMENTATION-CONTRACT.md`.
+5. `code/frontend/docs/roles/coordinador/PROFESSOR-SCREEN-SPEC.md`.
+6. `code/frontend/docs/roles/investigador/STUDENT-SCREEN-SPEC.md`.
 7. Componentes y páginas existentes en `code/frontend/src`.
 
 No inventes flujos, permisos ni datos que contradigan esos documentos. Si la imagen y el contrato difieren, conserva la intención visual de la imagen y respeta el contrato funcional. Señala cualquier conflicto antes de resolverlo.

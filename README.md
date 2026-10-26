@@ -1,66 +1,61 @@
 # Healthdocs Viewer — Frontend
 
-Aplicación web de desarrollo para Healthdocs Viewer basada en el contrato OpenAPI canónico `openapi/openapi.yaml` (v0.2.1).
+Healthdocs Viewer es una aplicación web para seguir casos de estudio, gestionar sus archivos y entregar resultados. Este repositorio contiene la interfaz para pacientes, investigadores y coordinadores. El proyecto está en desarrollo; la aplicación permite recorrer los flujos principales con datos de demostración y conectar parte de ellos al backend.
 
-## Características
+## Avance funcional
 
-- **Autenticación local de desarrollo**:
-  - Pantalla de inicio de sesión con botones de acceso rápido para los usuarios de prueba definidos en el contrato:
-    - **Paciente**: `paciente@healthdocs.local` (`paciente123`)
-    - **Investigador**: `estudiante@healthdocs.local` (`estudiante123`)
-    - **Coordinador**: `profesor@healthdocs.local` (`profesor123`)
-Los valores técnicos de rol son `patient`, `researcher`, `coordinator` y `admin`. Los correos y contraseñas locales mostrados arriba son identificadores de prueba heredados; no representan los nombres de rol.
-- **Gestión de JWT y Seguridad**:
-  - Manejo de sesión y access token delegado al proveedor configurado.
-  - Inyección automática de cabecera `Authorization: Bearer <token>` en todas las llamadas API.
-  - Protección de rutas privadas: redirección inmediata a `/login` si no hay token válido.
-  - Manejo de respuestas `401 Unauthorized`: limpieza del token y redirección al login.
-  - Manejo de respuestas `403 Forbidden`: banner visible con mensaje claro de *Permisos insuficientes* sin filtrar datos sensibles.
-- **Vistas y Acciones por Rol**:
-  - **Paciente**:
-    - Crear caso (`POST /cases`)
-    - Cargar archivos con URL prefirmada (`POST /cases/{caseId}/uploads` y `POST /files/{fileId}/complete`)
-    - Listar sus casos (`GET /cases`)
-    - Consultar y descargar resultado disponible (`GET /cases/{caseId}/result`)
-  - **Investigador**:
-    - Ver casos asignados (`GET /internal/cases`)
-    - Descargar archivos de entrada (`POST /internal/cases/{caseId}/files/{fileId}/download`)
-    - Cargar resultado de análisis (`POST /internal/cases/{caseId}/result-uploads` y `POST /files/{fileId}/complete`)
-  - **Coordinador**:
-    - Supervisar casos habilitados (`GET /internal/cases`)
-    - Asignar casos a investigadores (`POST /operations/cases/{caseId}/assignments`)
-    - Publicar y marcar resultados como disponibles para el paciente (`POST /operations/results/{resultId}/availability`)
-- **Modos de Ejecución**:
-    - **Mock Dev**: Emulador en memoria para desarrollo y pruebas inmediatas sin requerir backend iniciado. Cubre el flujo principal, pero no sustituye la validación end-to-end contra el backend real.
-  - **Backend API**: Conexión directa mediante proxy hacia `http://localhost:8080/api/v1`.
+| Espacio | Lo que se puede recorrer hoy |
+| --- | --- |
+| Paciente | Inicio con resumen y actividad reciente; creación y reanudación de casos; consentimiento, carga y envío de archivos; búsqueda y seguimiento de casos; consulta de resultados; notificaciones y solicitudes de cambio de archivos. |
+| Investigador | Inicio con casos y resultados recientes; consulta de casos asignados y sus archivos; carga de resultados; seguimiento de resultados enviados y correcciones solicitadas. |
+| Coordinador | Inicio con indicadores de trabajo; bandeja de casos académicos; gestión del acceso de investigadores; revisión de solicitudes de cambio; revisión, publicación y devolución de resultados para corrección. |
 
-## Comandos de desarrollo
+La navegación exige iniciar sesión y limita las pantallas según el rol. La interfaz contempla estados de carga, errores y respuestas de acceso denegado. También incluye vistas de ayuda y configuración; algunas acciones de configuración siguen siendo de muestra.
+
+### Estado de la integración
+
+- **Demostración local:** funciona sin iniciar el backend. El inicio de sesión ofrece accesos rápidos para los tres roles y utiliza datos de ejemplo. Sirve para revisar pantallas, navegación y estados de los flujos.
+- **Conexión al backend:** los servicios de casos, archivos, resultados, asignaciones y notificaciones incluyen llamadas a la API. La integración completa de cada recorrido debe validarse con el backend y datos reales.
+- **Pendiente:** la bandeja de resultados del paciente y el dashboard de coordinación todavía muestran datos de ejemplo. En modo demostración, el detalle del caso del paciente utiliza una ficha de ejemplo y permite simular la decisión de coordinación sobre un cambio de archivos. La revisión real de esa solicitud requiere el backend. El panel de administración está en preparación.
+
+Estos puntos describen el estado de la interfaz; no representan una liberación para uso clínico o productivo.
+
+## Recorrido sugerido para una demostración
+
+1. Entrar como **paciente** para mostrar el dashboard, crear o retomar un caso, revisar sus archivos y abrir una solicitud de cambio.
+2. Entrar como **investigador** para revisar casos asignados, abrir un detalle y seguir el flujo de entrega de resultados.
+3. Entrar como **coordinador** para mostrar la bandeja académica, la gestión de investigadores y la revisión de resultados.
+
+Los botones de acceso rápido aparecen en la pantalla de inicio de sesión cuando se usa la autenticación local. Los datos y credenciales de ese modo son exclusivamente de desarrollo.
+
+## Ejecutar la demostración local
+
+Requiere Node.js y npm. Desde la carpeta de este repositorio:
 
 ```bash
-# Instalar dependencias
 npm install
-
-# Iniciar servidor de desarrollo en http://localhost:3000
 npm run dev
-
-# Compilar para producción (TypeScript + Vite)
-npm run build
-
-# Vista previa de la compilación de producción
-npm run preview
 ```
 
-## Flujo local de resultados
+Abrir `http://localhost:3000`. Con la configuración predeterminada, la aplicación usa autenticación local y API simulada; no hace falta iniciar otros servicios.
 
-La guía reproducible del paso 8, incluidos casos de prueba, estados HTTP, expiración de URLs y limitaciones, está en [`../docs/paso-8-flujo-local.md`](../docs/paso-8-flujo-local.md). El mock se puede usar sin backend; para probar el contrato real, iniciar primero PostgreSQL y Spring Boot según `backend/README.md`.
-# Autenticación
+Para usar el backend local, iniciarlo en `http://localhost:8080` y ejecutar en la consola del navegador:
 
-El frontend concentra login, logout, lectura del access token y cambios de sesión en `src/services/authService.ts`. Los componentes y servicios de negocio no importan el SDK de Supabase. Para mantener el flujo local existente, `VITE_AUTH_PROVIDER=local` es el valor predeterminado. Para usar Supabase configure en el entorno de Vite:
-
-```dotenv
-VITE_AUTH_PROVIDER=supabase
-VITE_SUPABASE_URL=https://<project-ref>.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```js
+localStorage.setItem("healthdocs_use_mock_api", "false");
+location.reload();
 ```
 
-El cliente mantiene y renueva la sesión de Supabase; `apiClient` obtiene el token vigente antes de cada petición al backend. El backend devuelve el perfil y los permisos de negocio. Por eso, una cuenta Supabase debe estar vinculada a un usuario de Healthdocs antes de poder usar la aplicación. No use la `service_role` key en el navegador.
+El servidor de desarrollo redirige `/api/v1` al backend local. Después de cambiar de modo, iniciar sesión de nuevo con una cuenta válida para ese entorno. Para volver a la demostración, cambiar el valor a `"true"`, recargar e iniciar sesión con uno de los accesos rápidos.
+
+## Autenticación y herramientas de desarrollo
+
+La autenticación local es la opción predeterminada. También se puede configurar Supabase Auth con las variables documentadas en [`.env.example`](.env.example). En ese caso, la cuenta debe estar vinculada a un usuario de Healthdocs en el backend para obtener su perfil y permisos.
+
+```bash
+npm run build    # Comprobación TypeScript y compilación con Vite
+npm test -- --run # Pruebas con Vitest
+npm run preview  # Vista previa de la compilación
+```
+
+El [índice de documentación](docs/README.md) reúne las especificaciones de diseño, los flujos por rol y los contratos de datos. El contrato OpenAPI y las instrucciones para iniciar el servidor están en el [repositorio del backend](https://github.com/Healthdocs-Viewer/backend).
