@@ -19,12 +19,14 @@ const formatDate = (value: string) => new Intl.DateTimeFormat("es-CO", {
   day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
 }).format(new Date(value));
 
-const statusPresentation: Record<AcademicStudentCase["status"], { label: string; variant: "info" | "success" }> = {
+const statusPresentation: Record<AcademicStudentCase["status"], { label: string; variant: "info" | "success" | "warning" }> = {
   ENABLED_FOR_PROCESSING: { label: "En procesamiento", variant: "info" },
   RESULT_UPLOADED: { label: "Resultado cargado", variant: "success" },
   RESULT_AVAILABLE: { label: "Disponible para el paciente", variant: "success" },
   CREATED: { label: "Creado", variant: "info" },
   FILES_RECEIVED: { label: "Archivos recibidos", variant: "info" },
+  INPUT_CHANGE_DRAFT: { label: "Cambio en edición", variant: "warning" },
+  INPUT_CHANGE_REVIEW: { label: "Cambio pendiente de revisión", variant: "warning" },
 };
 
 type StudentCasesDrawerProps = {
@@ -125,7 +127,7 @@ export function StudentCasesDrawer({ open, onOpenChange, student, cases, isLoadi
         <div className="mx-5 flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><UserRound className="h-5 w-5" aria-hidden="true" /></span>
           <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{student.fullName}</p><p className="text-xs text-muted">{student.studentCode}</p></div>
-          <Badge variant={student.authorizationStatus === "AUTHORIZED" ? "success" : student.authorizationStatus === "PENDING" ? "warning" : "destructive"}>{student.authorizationStatus === "AUTHORIZED" ? "Autorizado" : student.authorizationStatus === "PENDING" ? "Pendiente" : "Restringido"}</Badge>
+          <Badge variant={student.authorizationStatus === "AUTHORIZED" ? "success" : "destructive"}>{student.authorizationStatus === "AUTHORIZED" ? "Autorizado" : "Restringido"}</Badge>
           <div className="border-l border-border pl-3"><p className="text-base font-semibold">{initialIds.length}</p><p className="text-xs text-muted">casos asignados</p></div>
         </div>
 

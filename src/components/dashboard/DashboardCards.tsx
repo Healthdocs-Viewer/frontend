@@ -1,7 +1,8 @@
 import React from "react";
 import { Check } from "lucide-react";
-import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { Link } from "react-router-dom";
 
 export function Mini({ icon: Icon, value, title, detail, color }: {
   icon: React.ElementType;
@@ -20,12 +21,13 @@ export function Mini({ icon: Icon, value, title, detail, color }: {
   );
 }
 
-export function NextStep({ icon: Icon, title, caseId, description, action, active = false, success = false }: {
+export function NextStep({ icon: Icon, title, caseId, description, action, to, active = false, success = false }: {
   icon: React.ElementType;
   title: string;
   caseId: string;
   description: string;
   action: string;
+  to?: string;
   active?: boolean;
   success?: boolean;
 }) {
@@ -44,7 +46,11 @@ export function NextStep({ icon: Icon, title, caseId, description, action, activ
               <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{description}</p>
             </div>
           </div>
-          <Button variant={active ? "default" : "outline"} size="sm" className="shrink-0">{action}</Button>
+          {to ? (
+            <Link to={to} className={`inline-flex h-8 shrink-0 items-center justify-center rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${active ? "bg-indigo-600 text-white hover:bg-indigo-700" : "border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-300 dark:hover:text-indigo-300"}`}>{action}</Link>
+          ) : (
+            <Button variant={active ? "default" : "outline"} size="sm" className="shrink-0">{action}</Button>
+          )}
         </div>
       </div>
     </div>

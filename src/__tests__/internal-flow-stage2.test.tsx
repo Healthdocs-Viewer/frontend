@@ -123,7 +123,7 @@ describe('Etapa 2: Carga de Resultado Externo y Validaciones', () => {
           fileKind: 'RESULT' as const,
         },
         uploadUrl: 'https://storage.healthdocs.local/results/f-result-001',
-        expiresAt: '2026-09-16T18:00:00Z',
+        expiresAt: '2099-09-16T18:00:00Z',
       };
 
       const mockCompleteResponse = {

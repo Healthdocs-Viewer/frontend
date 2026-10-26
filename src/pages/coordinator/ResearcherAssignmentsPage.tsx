@@ -30,7 +30,6 @@ type SortKey = StudentSortField;
 
 const statusLabels: Record<StudentAuthorizationStatus, string> = {
   AUTHORIZED: "Autorizado",
-  PENDING: "Pendiente",
   RESTRICTED: "Restringido",
 };
 
@@ -104,8 +103,8 @@ export function ResearcherAssignmentsPage() {
     </button>
   );
   const statusBadge = (student: AcademicStudent) => (
-    <Badge variant={student.authorizationStatus === "AUTHORIZED" ? "success" : student.authorizationStatus === "PENDING" ? "warning" : "destructive"} className="gap-2 whitespace-nowrap">
-      <span className={`h-2 w-2 rounded-full ${student.authorizationStatus === "AUTHORIZED" ? "bg-success" : student.authorizationStatus === "PENDING" ? "bg-warning" : "bg-danger"}`} aria-hidden="true" />
+    <Badge variant={student.authorizationStatus === "AUTHORIZED" ? "success" : "destructive"} className="gap-2 whitespace-nowrap">
+      <span className={`h-2 w-2 rounded-full ${student.authorizationStatus === "AUTHORIZED" ? "bg-success" : "bg-danger"}`} aria-hidden="true" />
       {statusLabels[student.authorizationStatus]}
     </Badge>
   );
@@ -178,7 +177,7 @@ export function ResearcherAssignmentsPage() {
                   <td className="whitespace-nowrap px-5 py-2.5 text-muted">{student.email}</td>
                   <td className="px-5 py-2.5">{statusBadge(student)}</td>
                   <td className="px-5 py-2.5 text-muted">{student.assignedCaseCount}</td>
-                  <td className="px-5 py-2.5"><Button variant="outline" size="sm" disabled={student.authorizationStatus === "RESTRICTED"} onClick={() => void openStudentCases(student)} className="whitespace-nowrap text-content"><FolderOpen className="h-4 w-4" aria-hidden="true" />{student.authorizationStatus === "RESTRICTED" ? "Ver casos" : "Gestionar casos"}</Button></td>
+                  <td className="px-5 py-2.5"><Button variant="outline" size="sm" onClick={() => void openStudentCases(student)} className="whitespace-nowrap text-content"><FolderOpen className="h-4 w-4" aria-hidden="true" />{student.authorizationStatus === "RESTRICTED" ? "Ver casos" : "Gestionar casos"}</Button></td>
                 </tr>
               ))}
               {visible.length === 0 && <tr><td colSpan={6} className="px-5 py-10 text-center text-sm text-muted">No hay investigadores que coincidan con la búsqueda.</td></tr>}

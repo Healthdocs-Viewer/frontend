@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/vitest';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { StudentDashboard } from '../pages/xlegacy/StudentDashboard';
+import { ResearcherDashboard } from '../pages/xlegacy/ResearcherDashboard';
 import { ProfessorDashboard } from '../pages/xlegacy/ProfessorDashboard';
 import { apiClient } from '../services/apiClient';
 import { InternalCaseSummary } from '../types/api';
@@ -72,13 +72,13 @@ describe('Etapa 3: Integración de Dashboards del Flujo Interno', () => {
     vi.restoreAllMocks();
   });
 
-  describe('StudentDashboard', () => {
+  describe('ResearcherDashboard', () => {
     it('carga y renderiza los casos asignados y selecciona el primero por defecto', async () => {
       vi.spyOn(apiClient.internal, 'listAssignedCases').mockResolvedValueOnce(
         mockAssignedCases
       );
 
-      render(<StudentDashboard />);
+      render(<ResearcherDashboard />);
 
       expect(screen.getByText('Portal del Estudiante')).toBeInTheDocument();
       expect(screen.getByTestId('cases-loading-state')).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe('Etapa 3: Integración de Dashboards del Flujo Interno', () => {
         mockAssignedCases
       );
 
-      render(<StudentDashboard />);
+      render(<ResearcherDashboard />);
 
       await waitFor(() => {
         expect(screen.getAllByText('CAS-20260910-0001').length).toBeGreaterThanOrEqual(1);

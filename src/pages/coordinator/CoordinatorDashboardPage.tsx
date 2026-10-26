@@ -1,403 +1,112 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import {
-  Activity,
-  ArrowRight,
-  Bell,
-  CalendarClock,
-  CalendarDays,
-  CheckCircle2,
-  ClipboardCheck,
-  Download,
-  FileText,
-  Folder,
-  Plus,
-  Upload,
+  Activity, ArrowDownRight, ArrowRight, ArrowUpRight, Bell, BookOpenCheck,
+  Check, ChevronRight, CircleAlert, ClipboardList, Clock3, FileCheck2,
+  FolderKanban, Plus, UserRoundPlus, UsersRound,
 } from "lucide-react";
-import { Badge } from "../../components/ui/Badge";
-import { Button } from "../../components/ui/Button";
-import {
-  ActivityItem,
-  Mini,
-  NextStep,
-} from "../../components/dashboard/DashboardCards";
-import { getPatientDashboard } from "../../services/patientDashboard";
-import type {
-  ActivityType,
-  NextStepType,
-  PatientDashboardResponse,
-} from "../../types/patientDashboard";
+import { getCoordinatorDashboard, type CoordinatorDashboardData, type CoordinatorDashboardCase } from "../../services/coordinatorDashboard";
 
-const formatDate = (iso: string) =>
-  new Intl.DateTimeFormat("es-CO", {
-    day: "numeric",
-    month: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "UTC",
-  }).format(new Date(iso));
-const caseStatus: Record<
-  PatientDashboardResponse["recentCases"][number]["status"],
-  { label: string; variant: "default" | "info" | "success" }
-> = {
-  CREATED: { label: "Creado", variant: "default" },
-  FILES_RECEIVED: { label: "Archivos recibidos", variant: "info" },
-  ENABLED_FOR_PROCESSING: { label: "En proceso", variant: "info" },
-  RESULT_UPLOADED: { label: "Resultado cargado", variant: "info" },
-  RESULT_AVAILABLE: { label: "Resultado disponible", variant: "success" },
+const statusLabels: Record<CoordinatorDashboardCase["status"], string> = {
+  FILES_RECEIVED: "Por asignar",
+  ENABLED_FOR_PROCESSING: "En proceso",
+  INPUT_CHANGE_REVIEW: "Revisión requerida",
+  RESULT_UPLOADED: "Resultado cargado",
 };
-const stepIcons: Record<NextStepType, typeof FileText> = {
-  ACCEPT_CONSENT: ClipboardCheck,
-  UPLOAD_FILE: Upload,
-  VIEW_RESULT: FileText,
-  SIGN_AUTHORIZATION: ClipboardCheck,
-  SCHEDULE_FOLLOW_UP: CalendarClock,
-  DOWNLOAD_REPORT: Download,
+
+const statusStyle: Record<CoordinatorDashboardCase["status"], string> = {
+  FILES_RECEIVED: "bg-violet-50 text-violet-700 ring-violet-600/15 dark:bg-violet-400/10 dark:text-violet-300",
+  ENABLED_FOR_PROCESSING: "bg-sky-50 text-sky-700 ring-sky-600/15 dark:bg-sky-400/10 dark:text-sky-300",
+  INPUT_CHANGE_REVIEW: "bg-amber-50 text-amber-700 ring-amber-600/15 dark:bg-amber-400/10 dark:text-amber-300",
+  RESULT_UPLOADED: "bg-emerald-50 text-emerald-700 ring-emerald-600/15 dark:bg-emerald-400/10 dark:text-emerald-300",
 };
-const activityStyle: Record<
-  ActivityType,
-  { icon: typeof FileText; tone: "emerald" | "indigo" | "blue" | "rose" }
-> = {
-  CASE_CREATED: { icon: FileText, tone: "indigo" },
-  CONSENT_ACCEPTED: { icon: CheckCircle2, tone: "blue" },
-  FILE_UPLOADED: { icon: FileText, tone: "indigo" },
-  RESULT_PUBLISHED: { icon: CheckCircle2, tone: "emerald" },
-  CASE_STATUS_CHANGED: { icon: FileText, tone: "blue" },
-  NOTIFICATION_SENT: { icon: Bell, tone: "rose" },
-  DOCUMENT_RECEIVED: { icon: Upload, tone: "indigo" },
-  REMINDER_SENT: { icon: Bell, tone: "rose" },
-  RESULT_VIEWED: { icon: CheckCircle2, tone: "emerald" },
-  PERSONAL_DATA_CONFIRMED: { icon: CheckCircle2, tone: "blue" },
-  CASE_ARCHIVED: { icon: CheckCircle2, tone: "emerald" },
-  MEDICAL_ORDER_ADDED: { icon: FileText, tone: "indigo" },
-};
+
+const formatDate = (value: string) => new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short" }).format(new Date(value));
+
+const MetricCard = ({ title, value, caption, icon: Icon, accent, trend }: {
+  title: string; value: number; caption: string; icon: typeof FolderKanban; accent: string; trend?: "up" | "down";
+}) => (
+  <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-900/[0.02] dark:border-slate-800 dark:bg-slate-900">
+    <div className="flex items-start justify-between">
+      <span className={`grid h-10 w-10 place-items-center rounded-xl ${accent}`}><Icon className="h-5 w-5" aria-hidden="true" /></span>
+      {trend && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">{trend === "up" ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />} 12%</span>}
+    </div>
+    <p className="mt-4 text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
+    <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">{value}</p>
+    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{caption}</p>
+  </article>
+);
 
 export const CoordinatorDashboardPage = () => {
-  const [dashboard, setDashboard] =
-    React.useState<PatientDashboardResponse | null>(null);
-  const [error, setError] = React.useState(false);
+  const [dashboard, setDashboard] = React.useState<CoordinatorDashboardData | null>(null);
   React.useEffect(() => {
-    let mounted = true;
-    getPatientDashboard()
-      .then((data) => {
-        if (mounted) setDashboard(data);
-      })
-      .catch(() => {
-        if (mounted) setError(true);
-      });
-    return () => {
-      mounted = false;
-    };
+    let active = true;
+    getCoordinatorDashboard().then((data) => { if (active) setDashboard(data); });
+    return () => { active = false; };
   }, []);
-  if (error) return <p role="alert">No fue posible cargar el dashboard.</p>;
-  if (!dashboard) return <p role="status">Cargando dashboard...</p>;
-  const { summary, recentCases, nextSteps, recentActivity, availableResults } =
-    dashboard;
-  const visibleRecentCases = recentCases.slice(0, 5);
 
+  if (!dashboard) return <div role="status" className="rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">Preparando tu resumen…</div>;
+
+  const maxCases = Math.max(...dashboard.weeklyActivity.map((item) => item.cases));
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Resumen general</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Una vista rápida de tus estudios y casos médicos.
-        </p>
-      </div>
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex flex-col items-center justify-between gap-5 md:flex-row">
-          <div className="border-l-4 border-indigo-600 pl-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-500">
-              Portal del paciente
-            </p>
-            <h2 className="mt-2 text-2xl font-bold">
-              Bienvenido al portal del coordinador de estudios médicos
-            </h2>
-            <p className="mt-2 max-w-xl text-sm text-slate-500 dark:text-slate-400">
-              Gestiona tus estudios médicos, carga documentos, realiza el
-              seguimiento de tus casos y consulta tus resultados de forma segura
-              y sencilla.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 text-indigo-300">
-            <FileText className="h-14 w-14" />
-            <Folder className="h-12 w-12 text-blue-300" />
-            <CalendarClock className="h-14 w-14" />
-          </div>
-          <div className="flex min-w-40 flex-col gap-2">
-            <Link
-              to="/mis_casos"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-center text-sm font-semibold text-white"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo caso
-            </Link>
-            <Link
-              to="/mis_resultados"
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-5 py-2.5 text-center text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"
-            >
-              <FileText className="h-4 w-4" />
-              Ver resultados
-            </Link>
-          </div>
+    <div className="space-y-6 pb-6">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300"><span className="h-1.5 w-1.5 rounded-full bg-indigo-500" /> Espacio de coordinación</div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">Buenos días, coordinador</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Aquí tienes el estado de los estudios académicos y lo que requiere tu atención.</p>
         </div>
+        <Link to="/casos_academicos" className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"><Plus className="h-4 w-4" /> Gestionar casos <ChevronRight className="h-4 w-4 opacity-75" /></Link>
+      </header>
+
+      <section aria-label="Resumen de casos" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard title="Casos activos" value={dashboard.metrics.activeCases} caption="en tu espacio" icon={FolderKanban} accent="bg-indigo-50 text-indigo-600 dark:bg-indigo-400/10 dark:text-indigo-300" trend="up" />
+        <MetricCard title="Por asignar" value={dashboard.metrics.waitingAssignment} caption="esperan investigador" icon={UserRoundPlus} accent="bg-violet-100 text-violet-700 dark:bg-violet-400/15 dark:text-violet-200" />
+        <MetricCard title="En procesamiento" value={dashboard.metrics.inProgress} caption="con investigador" icon={Activity} accent="bg-sky-50 text-sky-600 dark:bg-sky-400/10 dark:text-sky-300" trend="up" />
+        <MetricCard title="Requieren revisión" value={dashboard.metrics.needsReview} caption="pendientes de acción" icon={CircleAlert} accent="bg-amber-50 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300" />
       </section>
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Mini
-          icon={Folder}
-          value={String(summary.activeCases)}
-          title="Casos activos"
-          detail="Total de casos creados"
-          color="text-indigo-500"
-        />
-        <Mini
-          icon={CalendarClock}
-          value={String(summary.inProgressCases)}
-          title="En proceso"
-          detail="Estudios en revisión"
-          color="text-blue-500"
-        />
-        <Mini
-          icon={FileText}
-          value={String(summary.availableResults)}
-          title="Resultados disponibles"
-          detail="Listos para consultar"
-          color="text-emerald-500"
-        />
-        <Mini
-          icon={Bell}
-          value={String(summary.notificationsRequiringAttention)}
-          title="Notificaciones"
-          detail="Requieren tu atención"
-          color="text-rose-500"
-        />
-      </section>
-      <section className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1.65fr)_minmax(340px,1fr)]">
-        <article className="h-[440px] min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
-                <FileText className="h-4 w-4" />
-              </div>
-              <h2 className="font-semibold">Mis casos recientes</h2>
-            </div>
-            <a
-              href="/mis_casos"
-              className="text-sm font-semibold text-indigo-600 hover:text-indigo-700"
-            >
-              Ver todos{" "}
-              <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" />
-            </a>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(280px,0.85fr)]">
+        <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-900/[0.02] dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+            <div><h2 className="font-semibold text-slate-900 dark:text-white">Casos que requieren atención</h2><p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Prioriza asignaciones y revisiones pendientes</p></div>
+            <Link to="/casos_academicos" className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-300">Ver bandeja <ArrowRight className="h-4 w-4" /></Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[680px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                <tr>
-                  <th scope="col" className="px-5 py-3">
-                    ID del caso
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Estudio
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Fecha de creación
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Estado
-                  </th>
-                  <th scope="col" className="px-5 py-3 text-right">
-                    Detalle
-                  </th>
+              <thead><tr className="bg-slate-50/70 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-300"><th className="px-5 py-3">Caso / estudio</th><th className="px-4 py-3">Investigador</th><th className="px-4 py-3">Estado</th><th className="px-4 py-3">Recibido</th><th className="px-5 py-3" /></tr></thead>
+              <tbody>{dashboard.attentionCases.map((item) => (
+                <tr key={item.id} className="border-t border-slate-100 transition hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-800/40">
+                  <td className="px-5 py-4"><p className="font-medium text-slate-800 dark:text-slate-100">{item.referenceCode}</p><p className="mt-0.5 max-w-[230px] truncate text-xs text-slate-500 dark:text-slate-400">{item.studyName}</p></td>
+                  <td className="px-4 py-4 text-xs text-slate-600 dark:text-slate-300">{item.researcher}</td>
+                  <td className="px-4 py-4"><span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ring-inset ${statusStyle[item.status]}`}>{statusLabels[item.status]}</span></td>
+                  <td className="whitespace-nowrap px-4 py-4 text-xs text-slate-500 dark:text-slate-400">{formatDate(item.receivedAt)}</td>
+                  <td className="px-5 py-4 text-right"><Link aria-label={`Abrir caso ${item.referenceCode}`} to={item.status === "FILES_RECEIVED" ? "/casos_academicos" : `/casos_academicos/${item.referenceCode}`} className="inline-flex rounded-lg p-2 text-slate-400 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-400/10 dark:hover:text-indigo-300"><ChevronRight className="h-4 w-4" /></Link></td>
                 </tr>
-              </thead>
-              <tbody>
-                {visibleRecentCases.length === 0 && (
-                  <tr className="h-[65px]">
-                    <td
-                      colSpan={5}
-                      className="px-5 text-center text-sm text-slate-500 dark:text-slate-400"
-                    >
-                      Aún no tienes casos recientes.
-                    </td>
-                  </tr>
-                )}
-                {visibleRecentCases.map((caseItem) => (
-                  <tr
-                    key={caseItem.id}
-                    className="h-[65px] border-b border-slate-100 text-slate-600 transition-colors hover:bg-slate-50/70 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/70"
-                  >
-                    <td className="whitespace-nowrap px-5 py-4 font-medium text-slate-700 dark:text-slate-200">
-                      {caseItem.referenceCode}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4">
-                      {caseItem.studyName}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-4">
-                      {formatDate(caseItem.createdAt)}
-                    </td>
-                    <td className="px-4 py-4">
-                      <Badge variant={caseStatus[caseItem.status].variant}>
-                        {caseStatus[caseItem.status].label}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="font-medium"
-                      >
-                        Ver
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {Array.from({
-                  length: Math.max(
-                    0,
-                    5 - Math.max(1, visibleRecentCases.length),
-                  ),
-                }).map((_, index) => (
-                  <tr key={`spacer-${index}`} className="h-[65px]">
-                    <td colSpan={5} aria-hidden="true" />
-                  </tr>
-                ))}
-              </tbody>
+              ))}</tbody>
             </table>
           </div>
         </article>
-        <article className="flex h-[440px] min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex items-center gap-2.5">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
-              <ClipboardCheck className="h-4 w-4" />
-            </div>
-            <h2 className="font-semibold">Próximos pasos</h2>
+
+        <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-900/[0.02] dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-start justify-between"><div><h2 className="font-semibold text-slate-900 dark:text-white">Actividad de casos</h2><p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Últimos 7 días</p></div><span className="grid h-9 w-9 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-400/10 dark:text-indigo-300"><ClipboardList className="h-4 w-4" /></span></div>
+          <div className="mt-7 flex h-36 items-end justify-between gap-2" role="img" aria-label={`Casos recibidos durante la semana: ${dashboard.weeklyActivity.map((d) => `${d.day} ${d.cases}`).join(", ")}`}>
+            {dashboard.weeklyActivity.map((item) => <div key={item.day} className="flex h-full flex-1 flex-col items-center justify-end gap-2"><span className="text-[10px] font-medium text-slate-400 dark:text-slate-300">{item.cases}</span><div className="w-full max-w-7 rounded-t-md bg-indigo-100 dark:bg-indigo-400/15" style={{ height: `${Math.max(12, (item.cases / maxCases) * 82)}%` }}><div className="h-full rounded-t-md bg-indigo-500" style={{ height: `${Math.max(28, (item.cases / maxCases) * 100)}%` }} /></div><span className="text-[10px] text-slate-400 dark:text-slate-300">{item.day}</span></div>)}
           </div>
-          <div className="relative mt-5 min-h-0 flex-1 overflow-y-auto pr-2">
-            {nextSteps.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                No tienes pasos pendientes por ahora.
-              </p>
-            ) : (
-              <div className="relative">
-                <div
-                  aria-hidden="true"
-                  className="absolute bottom-7 left-[11px] top-7 w-px bg-slate-200 dark:bg-slate-700"
-                />
-                <div className="space-y-3">
-                  {nextSteps.map((step) => (
-                    <NextStep
-                      key={step.id}
-                      icon={stepIcons[step.type]}
-                      title={step.title}
-                      caseId={step.caseReferenceCode}
-                      description={step.description}
-                      action={step.action.label}
-                      active={step.priority === "HIGH"}
-                      success={
-                        step.type === "VIEW_RESULT" ||
-                        step.type === "DOWNLOAD_REPORT"
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs dark:border-slate-800"><span className="text-slate-500 dark:text-slate-400">Recibidos esta semana</span><span className="font-semibold text-slate-800 dark:text-slate-100">36 casos</span></div>
         </article>
       </section>
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <article className="order-2 self-start rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex items-center gap-2.5">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
-              <Activity className="h-4 w-4" />
-            </div>
-            <h2 className="font-semibold">Actividad reciente</h2>
-          </div>
-          {recentActivity.length === 0 ? (
-            <p className="mt-5 rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              Aún no hay actividad reciente.
-            </p>
-          ) : (
-            <div className="relative mt-5">
-              <div className="absolute bottom-7 left-[11px] top-4 w-px bg-slate-200 dark:bg-slate-700" />
-              <div className="space-y-4">
-                {recentActivity.slice(0, 5).map((item) => (
-                  <ActivityItem
-                    key={item.id}
-                    icon={activityStyle[item.type].icon}
-                    tone={activityStyle[item.type].tone}
-                    title={item.title}
-                    description={item.description}
-                    date={formatDate(item.occurredAt)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+
+      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
+        <article className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-900/[0.02] dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between"><div><h2 className="font-semibold text-slate-900 dark:text-white">Actividad reciente</h2><p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Actualizaciones de tu espacio académico</p></div><button type="button" aria-label="Notificaciones" className="rounded-lg p-2 text-slate-400 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"><Bell className="h-4 w-4" /></button></div>
+          <div className="mt-5 divide-y divide-slate-100 dark:divide-slate-800">{dashboard.activity.map((item) => <div key={item.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"><span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full ${item.tone === "green" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300" : item.tone === "amber" ? "bg-amber-50 text-amber-600 dark:bg-amber-400/10 dark:text-amber-300" : "bg-sky-50 text-sky-600 dark:bg-sky-400/10 dark:text-sky-300"}`}>{item.tone === "green" ? <FileCheck2 className="h-4 w-4" /> : item.tone === "amber" ? <Clock3 className="h-4 w-4" /> : <BookOpenCheck className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><p className="text-sm font-medium text-slate-800 dark:text-slate-100">{item.title}</p><p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{item.detail}</p></div><span className="whitespace-nowrap text-[11px] text-slate-400 dark:text-slate-300">{item.time}</span></div>)}</div>
         </article>
-        <article className="order-1 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300">
-                <FileText className="h-4 w-4" />
-              </div>
-              <h2 className="font-semibold">Resultados disponibles</h2>
-            </div>
-            <a
-              href="/mis_resultados"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-300 dark:hover:text-indigo-200"
-            >
-              Ver todos{" "}
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </a>
-          </div>
-          {availableResults.length === 0 ? (
-            <p className="mt-4 rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              No tienes resultados disponibles por ahora.
-            </p>
-          ) : (
-            availableResults.map((result) => (
-              <div
-                key={result.id}
-                className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-800 dark:bg-emerald-950/40"
-              >
-                <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                      {result.caseReferenceCode}
-                    </p>
-                    <h3 className="mt-0.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      {result.studyName}
-                    </h3>
-                    <span className="mt-3 inline-flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {formatDate(result.availableAt)}
-                    </span>
-                    <p className="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-300">
-                      El resultado de tu estudio ya está disponible. Puedes
-                      descargarlo desde la plataforma.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
-                    <span className="whitespace-nowrap rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/70 dark:text-emerald-200">
-                      Resultado disponible
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Descargar
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+        <article className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-5 text-white shadow-sm">
+          <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full border-[24px] border-white/5" /><div className="relative"><span className="grid h-10 w-10 place-items-center rounded-xl bg-white/15"><UsersRound className="h-5 w-5" /></span><h2 className="mt-5 text-lg font-semibold">Tu equipo de investigación</h2><p className="mt-1 text-sm leading-6 text-indigo-100">Revisa investigadores y organiza el acceso a los casos de tu espacio.</p><Link to="/investigadores" className="mt-5 inline-flex items-center gap-2 rounded-lg bg-white px-3.5 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-50">Ver investigadores <ArrowRight className="h-4 w-4" /></Link><div className="mt-6 flex items-center gap-2 border-t border-white/15 pt-4 text-xs text-indigo-100"><Check className="h-3.5 w-3.5" /> Asignaciones bajo tu coordinación</div></div>
         </article>
       </section>
+      <p className="text-center text-[11px] text-slate-400 dark:text-slate-300">Datos de demostración · El resumen se conectará al servicio académico</p>
     </div>
   );
 };

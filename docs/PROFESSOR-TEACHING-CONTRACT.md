@@ -16,30 +16,33 @@ La asignación desde `Casos` mediante panel lateral es la vía principal. `Inves
 
 ### Listado
 
-- Título `Casos de docencia` y descripción breve.
-- Buscador por identificador del caso o investigador.
-- Filtros: `Todos`, `Sin asignar`, `Asignado`, `En procesamiento`, `Resultado cargado`, `Corrección requerida` y `Disponible para el paciente`.
-- Identificador, fecha de recepción, estado, investigador asignado y última actualización.
+- Título `Casos Académicos` y descripción breve.
+- Buscador por código del caso o nombre del estudio.
+- Filtros: `Todos`, `Archivos recibidos`, `En procesamiento`, `Cambio en edición`, `Cambio pendiente de revisión`, `Resultado cargado` y `Disponible para el paciente`.
+- Columnas: identificador del caso, fecha de recepción, estado, última actualización y acciones. El investigador no se muestra como columna; se consulta en el drawer de acceso.
+- La búsqueda, el estado, el orden por recepción y la página se envían al endpoint; la interfaz muestra la página devuelta por el servidor.
 - Acciones para abrir el detalle y asignar o cambiar investigador.
 
 ### Panel lateral de asignación
 
-Al seleccionar `Asignar investigador` o `Cambiar asignación` se abre un panel lateral derecho, manteniendo visible la bandeja.
+Al seleccionar `Gestionar acceso` se abre un panel lateral derecho, manteniendo visible la bandeja.
 
 Debe contener:
 
 - Encabezado y botón para cerrar.
-- Identificador, fecha y estado del caso.
-- Investigador actual, si existe.
+- Identificador y estado del caso.
+- Solo las asignaciones vigentes al abrir el panel. Si no hay ninguna, mostrar un estado vacío que invita a buscar.
 - Buscador por nombre, correo o identificador.
-- Lista de investigadores autorizados.
-- Cantidad de casos asignados, si está disponible.
-- Selección de un investigador.
-- Botones `Asignar` o `Guardar cambio` y `Cancelar`.
+- Los resultados del directorio se consultan al escribir; no cargar el directorio completo al abrir el panel.
+- Lista de investigadores autorizados que coinciden con la búsqueda.
+- Selección de varios investigadores; conservar el borrador al cambiar la búsqueda.
+- Botones `Guardar cambios` y `Cancelar`.
 
-El botón principal permanece deshabilitado sin selección. El cambio de asignación requiere confirmación.
+El botón principal permanece deshabilitado si no hay cambios. Los cambios se guardan en lote de forma atómica.
 
-Estados del panel: cargando investigadores, sin investigadores, error y guardado exitoso.
+Estados del panel: cargando asignaciones, sin investigadores asignados, buscando resultados, sin coincidencias, error y guardado exitoso. Tras guardar correctamente, mostrar confirmación en el panel y mantenerlo abierto.
+
+Los casos en `INPUT_CHANGE_DRAFT` o `INPUT_CHANGE_REVIEW` permiten consultar asignaciones, pero no modificarlas. Deshabilitar selección y guardado mientras la solicitud esté abierta.
 
 ### Detalle del caso
 
@@ -73,11 +76,11 @@ No se muestra el nombre completo del paciente por defecto; se usa el identificad
 
 | Estado del caso | Acciones principales |
 |---|---|
-| `Sin asignar` | Consultar información básica y asignar investigador |
-| `Asignado` | Consultar, descargar archivos y cambiar asignación si está permitido |
+| `Archivos recibidos` | Consultar información y gestionar investigadores autorizados |
+| `En procesamiento` | Consultar y gestionar investigadores autorizados si no hay una solicitud de cambio abierta |
+| `Cambio en edición` / `Cambio pendiente de revisión` | Consultar asignaciones; no modificarlas mientras la solicitud esté abierta |
 | `En procesamiento` | Consultar, descargar archivos y ver responsable |
-| `Resultado cargado` | Revisar, descargar, solicitar corrección o habilitar un resultado |
-| `Corrección requerida` | Consultar observación y esperar nueva versión |
+| `Resultado cargado` | Revisar, descargar, solicitar corrección o habilitar un resultado; gestionar investigadores si está permitido |
 | `Disponible para el paciente` | Consultar y descargar resultados disponibles |
 
 ## 3. Investigadores

@@ -1,6 +1,6 @@
 import React from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, FileText, Search, X } from "lucide-react";
+import { CheckCircle2, FileText, Search, UsersRound, X } from "lucide-react";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { getAcademicStudents, getStudentAssignmentsForCase } from "../../services/academicStudents";
@@ -21,7 +21,8 @@ type StudentAccessDrawerProps = {
   caseId: string;
   caseUuid: string;
   caseStatus: string;
-  onSave: (selectedIds: string[], expectedVersion: number) => Promise<void>;
+  canManage?: boolean;
+  onSave: (selectedIds: string[]) => Promise<void>;
 };
 
 function normalize(value: string) {
@@ -34,6 +35,7 @@ export function StudentAccessDrawer({
   caseId,
   caseUuid,
   caseStatus,
+  canManage = true,
   onSave,
 }: StudentAccessDrawerProps) {
   const [query, setQuery] = React.useState("");
@@ -46,12 +48,12 @@ export function StudentAccessDrawer({
   const [studentsError, setStudentsError] = React.useState("");
   const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
   const [initialIds, setInitialIds] = React.useState<string[]>([]);
-  const [assignmentVersion, setAssignmentVersion] = React.useState<number | null>(null);
   const [assignmentsLoading, setAssignmentsLoading] = React.useState(false);
   const [assignmentsError, setAssignmentsError] = React.useState("");
   const [discardConfirmationOpen, setDiscardConfirmationOpen] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState("");
+  const [saveSuccess, setSaveSuccess] = React.useState("");
   const [reloadToken, setReloadToken] = React.useState(0);
   const dialogRef = React.useRef<HTMLElement>(null);
   const closeButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -65,9 +67,11 @@ export function StudentAccessDrawer({
   const removals = initialIds.filter((id) => !currentSet.has(id)).length;
   const hasChanges = additions > 0 || removals > 0;
   const visibleStudents = React.useMemo(() => {
-    const selectedStudents = selectedIds.map((id) => knownStudentsById[id]).filter((student): student is AcademicStudent => Boolean(student));
-    return [...new Map([...selectedStudents, ...students].map((student) => [student.userId, student])).values()];
-  }, [selectedIds, knownStudentsById, students]);
+    const retainedStudents = [...new Set([...initialIds, ...selectedIds])]
+      .map((id) => knownStudentsById[id])
+      .filter((student): student is AcademicStudent => Boolean(student));
+    return [...new Map([...retainedStudents, ...students].map((student) => [student.userId, student])).values()];
+  }, [initialIds, selectedIds, knownStudentsById, students]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -79,12 +83,11 @@ export function StudentAccessDrawer({
     setKnownStudentsById({});
     setSelectedIds([]);
     setInitialIds([]);
-    setAssignmentVersion(null);
     setStudentsError("");
     setAssignmentsError("");
     setSaveError("");
     setDiscardConfirmationOpen(false);
-    setStudentsLoading(true);
+    setStudentsLoading(false);
     setAssignmentsLoading(true);
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
@@ -104,10 +107,9 @@ export function StudentAccessDrawer({
     getStudentAssignmentsForCase(caseUuid)
       .then((assignment) => {
         if (!active) return;
-        setInitialIds(assignment.studentIds);
-        setSelectedIds(assignment.studentIds);
+        setInitialIds(assignment.researcherIds);
+        setSelectedIds(assignment.researcherIds);
         setKnownStudentsById(Object.fromEntries(assignment.students.map((student) => [student.userId, student])));
-        setAssignmentVersion(assignment.assignmentVersion);
       })
       .catch(() => { if (active) setAssignmentsError("No se pudieron cargar los accesos actuales."); })
       .finally(() => { if (active) setAssignmentsLoading(false); });
@@ -116,6 +118,12 @@ export function StudentAccessDrawer({
 
   React.useEffect(() => {
     if (!open) return;
+    if (!debouncedQuery) {
+      setStudents([]);
+      setStudentsError("");
+      setStudentsLoading(false);
+      return;
+    }
     let active = true;
     setStudentsLoading(true);
     if (directoryPage === 0) setStudents([]);
@@ -155,14 +163,15 @@ export function StudentAccessDrawer({
   };
 
   const saveChanges = async () => {
-    if (assignmentVersion === null || isSaving) return;
+    if (isSaving) return;
     setIsSaving(true);
     setSaveError("");
+    setSaveSuccess("");
     try {
-      await onSave(selectedIds, assignmentVersion);
+      await onSave(selectedIds);
       setInitialIds(selectedIds);
+      setSaveSuccess("Los accesos se actualizaron correctamente.");
       setDiscardConfirmationOpen(false);
-      onOpenChangeRef.current(false);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "No se pudieron guardar los cambios. Inténtalo de nuevo.");
     } finally {
@@ -173,15 +182,15 @@ export function StudentAccessDrawer({
   const reloadAssignments = async () => {
     setAssignmentsLoading(true);
     setSaveError("");
+    setSaveSuccess("");
     try {
       const assignment = await getStudentAssignmentsForCase(caseUuid);
-      setInitialIds(assignment.studentIds);
-      setSelectedIds(assignment.studentIds);
+      setInitialIds(assignment.researcherIds);
+      setSelectedIds(assignment.researcherIds);
       setKnownStudentsById((current) => ({
         ...current,
         ...Object.fromEntries(assignment.students.map((student) => [student.userId, student])),
       }));
-      setAssignmentVersion(assignment.assignmentVersion);
     } catch {
       setSaveError("No se pudieron recargar las asignaciones. Inténtalo de nuevo.");
     } finally {
@@ -242,7 +251,7 @@ export function StudentAccessDrawer({
         <header className="flex items-start justify-between gap-4 px-5 pb-4 pt-5">
           <div className="min-w-0">
             <h2 id="student-access-title" className="text-xl font-semibold leading-6">Gestionar acceso de investigadores</h2>
-            <p id="student-access-description" className="mt-1 text-sm leading-5 text-muted">Agrega o retira investigadores autorizados.</p>
+            <p id="student-access-description" className="mt-1 text-sm leading-5 text-muted">{canManage ? "Agrega o retira investigadores autorizados." : "Consulta los investigadores asignados. Los cambios están bloqueados mientras la solicitud de cambio esté abierta."}</p>
           </div>
           <Button ref={closeButtonRef} variant="secondary" size="icon" onClick={requestClose} aria-label="Cerrar panel" className="h-8 w-8 shrink-0">
             <X className="h-4 w-4" aria-hidden="true" />
@@ -261,7 +270,13 @@ export function StudentAccessDrawer({
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden="true" />
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setStudents([]);
+              setStudentsError("");
+              setSaveSuccess("");
+              setDirectoryPage(0);
+            }}
             placeholder="Buscar por nombre, correo o código"
             aria-label="Buscar investigadores por nombre, correo o código"
             className="h-10 w-full rounded-lg border border-border bg-surface pl-9 pr-3 text-sm text-content outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-primary/30"
@@ -281,8 +296,11 @@ export function StudentAccessDrawer({
                 <input
                   type="checkbox"
                   checked={checked}
-                  disabled={disabled || assignmentsLoading || isSaving}
-                  onChange={() => setSelectedIds((current) => checked ? current.filter((id) => id !== student.userId) : [...current, student.userId])}
+                  disabled={disabled || assignmentsLoading || isSaving || !canManage}
+                  onChange={() => {
+                    setSaveSuccess("");
+                    setSelectedIds((current) => checked ? current.filter((id) => id !== student.userId) : [...current, student.userId]);
+                  }}
                   className="h-5 w-5 shrink-0 cursor-pointer accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   aria-label={`${checked ? "Quitar acceso de" : "Dar acceso a"} ${student.fullName}`}
                 />
@@ -290,7 +308,7 @@ export function StudentAccessDrawer({
                   <span className="block truncate text-sm font-medium text-content">{student.fullName}</span>
                   <span className="mt-0.5 block truncate text-xs text-muted">{student.studentCode} · {student.email}</span>
                 </span>
-                {!eligible && <span className="shrink-0 text-[11px] text-muted">{student.authorizationStatus === "PENDING" ? "Pendiente" : "Restringido"}</span>}
+                {!eligible && <span className="shrink-0 text-[11px] text-muted">Restringido</span>}
               </label>
             );
           })}
@@ -299,15 +317,28 @@ export function StudentAccessDrawer({
             <p className="py-3 text-center text-xs text-muted">Sin coincidencias nuevas. Conservamos visibles tus investigadores seleccionados.</p>
           )}
           {!assignmentsLoading && !studentsLoading && !studentsError && !assignmentsError && visibleStudents.length === 0 && (
-            <div className="py-8 text-center text-sm text-muted"><p>No hay investigadores que coincidan con la búsqueda.</p>{query && <Button variant="ghost" className="mt-2" onClick={() => setQuery("")}>Limpiar búsqueda</Button>}</div>
+            <div className="mx-auto my-8 max-w-sm rounded-xl border border-dashed border-border bg-slate-50/70 px-5 py-8 text-center dark:bg-slate-800/40">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary dark:bg-primary/20">
+                {debouncedQuery ? <Search className="h-5 w-5" aria-hidden="true" /> : <UsersRound className="h-5 w-5" aria-hidden="true" />}
+              </span>
+              <p className="mt-4 text-sm font-semibold text-content">
+                {debouncedQuery ? "No encontramos coincidencias" : "Aún no hay investigadores asignados"}
+              </p>
+              <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-muted">
+                {debouncedQuery
+                  ? "Prueba con otro nombre, correo o código de investigador."
+                  : "Busca arriba por nombre, correo o código para asignar el primer investigador a este caso."}
+              </p>
+              {query && <Button variant="ghost" size="sm" className="mt-3" onClick={() => setQuery("")}>Limpiar búsqueda</Button>}
+            </div>
           )}
         </div>
 
         <footer className="flex flex-col gap-3 border-t border-border bg-surface px-5 py-4 shadow-[0_-8px_20px_-16px_rgba(15,23,42,0.35)] sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-muted" aria-live="polite">{additions === 0 && removals === 0 ? "No hay cambios pendientes." : `Se agregarán ${additions} y se quitarán ${removals}.`}</p>
+          <p className="text-xs text-muted" aria-live="polite">{saveSuccess || (additions === 0 && removals === 0 ? "No hay cambios pendientes." : `Se agregarán ${additions} y se quitarán ${removals}.`)}</p>
           <div className="flex shrink-0 justify-end gap-2">
             <Button variant="outline" onClick={requestClose} disabled={isSaving}>Cancelar</Button>
-            <Button onClick={saveChanges} disabled={!hasChanges || assignmentsLoading || assignmentVersion === null || Boolean(studentsError || assignmentsError)} loading={isSaving}>Guardar cambios</Button>
+            <Button onClick={saveChanges} disabled={!canManage || !hasChanges || assignmentsLoading || Boolean(studentsError || assignmentsError)} loading={isSaving}>Guardar cambios</Button>
           </div>
         </footer>
 

@@ -41,19 +41,18 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
   const commonItems = [
     ["Inicio", Home, "/"],
-    ["Notificaciones", Bell, "/notificaciones"],
   ] as const;
+
+  const patientNotificationItems = role === "patient"
+    ? [["Notificaciones", Bell, "/notificaciones"]] as const
+    : [];
 
   const patientItems = [
     ["Mis casos", BriefcaseBusiness, "/mis_casos"],
     ["Mis resultados", FileText, "/mis_resultados"],
   ] as const;
 
-  // Researchers also have a personal patient-style workspace. Keep those links
-  // separate from the academic case/result views below.
-  const items = role === "patient" || role === "researcher" || role === "coordinator" || role === "admin"
-    ? [...commonItems, ...patientItems]
-    : commonItems;
+  const items = [...commonItems, ...patientNotificationItems, ...patientItems];
 
   const teachingItems = [
     ["Casos disponibles", FolderSearch, "/casos_academicos"],

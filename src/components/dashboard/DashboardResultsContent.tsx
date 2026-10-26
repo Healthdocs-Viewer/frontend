@@ -1,6 +1,6 @@
 import React from "react";
-import { DashboardSectionPage } from "../../pages/DashboardSectionPage";
+import { ResultsPage } from "../../pages/results/ResultsPage";
 
 export const DashboardResultsContent: React.FC = () => (
-  <DashboardSectionPage section="resultados" embedded />
+  <ResultsPage />
 );

@@ -1,6 +1,6 @@
 import React from "react";
-import { ConfiguracionPage } from "../../pages/ConfiguracionPage";
+import { SettingsPage } from "../../pages/settings/SettingsPage";
 
 export const DashboardSettingsContent: React.FC = () => (
-  <ConfiguracionPage embedded />
+  <SettingsPage embedded />
 );

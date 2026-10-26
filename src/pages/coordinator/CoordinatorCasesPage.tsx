@@ -1,41 +1,49 @@
 import React from "react";
 import {
   ArrowDown, ArrowLeft, ArrowRight, ArrowUp, CheckCircle2, CircleDot,
-  FileText, MoreVertical, Search, UserRoundPlus, Clock3,
+  FileText, Search, UserRoundPlus, Clock3,
 } from "lucide-react";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
-import { IconButton } from "../../components/ui/IconButton";
 import { cn } from "../../components/ui/cn";
 import { StudentAccessDrawer } from "../../components/cases/StudentAccessDrawer";
 import { Link } from "react-router-dom";
-import { getAcademicCases } from "../../services/academicCases";
-import { getAcademicStudents, getStudentAssignmentsForCase, saveStudentAssignmentsForCase } from "../../services/academicStudents";
-import type { AcademicCaseItem, AcademicCaseStatus } from "../../types/academicCases";
-import type { AcademicStudent } from "../../types/academicStudents";
+import { getCoordinatorAcademicCases } from "../../services/academicCases";
+import { saveStudentAssignmentsForCase } from "../../services/academicStudents";
+import type { CoordinatorAcademicCase, CoordinatorAcademicCaseStatus } from "../../types/academicCases";
 
-type AcademicStatusFilter = "Todos" | AcademicCaseStatus;
+type AcademicStatusFilter = "Todos" | CoordinatorAcademicCaseStatus;
 
-const statusLabels: Record<AcademicCaseStatus, string> = {
+const statusLabels: Record<CoordinatorAcademicCaseStatus, string> = {
+  FILES_RECEIVED: "Archivos recibidos",
   ENABLED_FOR_PROCESSING: "En procesamiento",
+  INPUT_CHANGE_DRAFT: "Cambio en edición",
+  INPUT_CHANGE_REVIEW: "Cambio pendiente de revisión",
   RESULT_UPLOADED: "Resultado cargado",
   RESULT_AVAILABLE: "Disponible para el paciente",
 };
 
-const statusConfig: Record<AcademicCaseStatus, { variant: "info" | "success"; icon: typeof CircleDot }> = {
+const statusConfig: Record<CoordinatorAcademicCaseStatus, { variant: "info" | "success" | "warning"; icon: typeof CircleDot }> = {
+  FILES_RECEIVED: { variant: "info", icon: CircleDot },
   ENABLED_FOR_PROCESSING: { variant: "info", icon: Clock3 },
+  INPUT_CHANGE_DRAFT: { variant: "warning", icon: Clock3 },
+  INPUT_CHANGE_REVIEW: { variant: "warning", icon: Clock3 },
   RESULT_UPLOADED: { variant: "success", icon: CheckCircle2 },
   RESULT_AVAILABLE: { variant: "success", icon: FileText },
 };
 
-const filters: AcademicCaseStatus[] = [
+const filters: CoordinatorAcademicCaseStatus[] = [
+  "FILES_RECEIVED",
   "ENABLED_FOR_PROCESSING",
+  "INPUT_CHANGE_DRAFT",
+  "INPUT_CHANGE_REVIEW",
   "RESULT_UPLOADED",
   "RESULT_AVAILABLE",
 ];
 
-function formatDate(value: string): string {
+function formatDate(value: string | null): string {
+  if (!value) return "—";
   return new Intl.DateTimeFormat("es-CO", {
     day: "numeric",
     month: "numeric",
@@ -48,44 +56,42 @@ function formatDate(value: string): string {
 
 export const CoordinatorCasesPage: React.FC = () => {
   const [query, setQuery] = React.useState("");
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
   const [activeFilter, setActiveFilter] = React.useState<AcademicStatusFilter>("Todos");
   const [page, setPage] = React.useState(1);
   const [sortAscending, setSortAscending] = React.useState(false);
   const [feedback, setFeedback] = React.useState("");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
-  const [activeCase, setActiveCase] = React.useState<AcademicCaseItem | null>(null);
-  const [accessByCase, setAccessByCase] = React.useState<Record<string, string[]>>({});
-  const [students, setStudents] = React.useState<AcademicStudent[]>([]);
-  const [cases, setCases] = React.useState<AcademicCaseItem[] | null>(null);
+  const [activeCase, setActiveCase] = React.useState<CoordinatorAcademicCase | null>(null);
+  const [response, setResponse] = React.useState<Awaited<ReturnType<typeof getCoordinatorAcademicCases>> | null>(null);
   const [error, setError] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
   const pageSize = 8;
   React.useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 300);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+  React.useEffect(() => {
     let active = true;
-    Promise.all([getAcademicCases(), getAcademicStudents()])
-      .then(async ([items, studentResponse]) => {
-        if (!active) return;
-        setCases(items);
-        setStudents(studentResponse.items);
-        const assignmentResponses = await Promise.all(items.map((item) => getStudentAssignmentsForCase(item.id)));
-        if (active) setAccessByCase(Object.fromEntries(assignmentResponses.map((assignment) => [assignment.caseId, assignment.studentIds])));
-      })
-      .catch(() => { if (active) setError("No se pudieron cargar los casos académicos."); });
+    if (query !== debouncedQuery) return () => { active = false; };
+    setLoading(true);
+    setError("");
+    getCoordinatorAcademicCases({
+      q: debouncedQuery,
+      status: activeFilter === "Todos" ? undefined : activeFilter,
+      sort: sortAscending ? "receivedAt,asc" : "receivedAt,desc",
+      page: page - 1,
+      size: pageSize,
+    })
+      .then((data) => { if (active) setResponse(data); })
+      .catch(() => { if (active) setError("No se pudieron cargar los casos académicos."); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
-  const allCases = cases ?? [];
-  const normalizedQuery = query.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
-  const counts = Object.fromEntries([
-    ["Todos", allCases.length],
-    ...filters.map((status) => [status, allCases.filter((item) => item.status === status).length]),
-  ]) as Record<string, number>;
-  const filteredCases = allCases.filter((item) =>
-    (activeFilter === "Todos" || item.status === activeFilter) &&
-    `${item.referenceCode} ${item.studyName}`.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es").includes(normalizedQuery),
-  ).sort((a, b) => sortAscending ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt));
-  const pageCount = Math.max(1, Math.ceil(filteredCases.length / pageSize));
-  const visibleCases = filteredCases.slice((page - 1) * pageSize, page * pageSize);
+  }, [query, debouncedQuery, activeFilter, sortAscending, page]);
+  const visibleCases = response?.items ?? [];
+  const pageCount = Math.max(1, response?.totalPages ?? 0);
   const updateFilter = (filter: AcademicStatusFilter) => { setActiveFilter(filter); setPage(1); };
-  const openAccessDrawer = (item: AcademicCaseItem) => {
+  const openAccessDrawer = (item: CoordinatorAcademicCase) => {
     setActiveCase(item);
     setDrawerOpen(true);
   };
@@ -119,7 +125,7 @@ export const CoordinatorCasesPage: React.FC = () => {
             </label>
             <div className="flex gap-2 overflow-x-auto pb-1 xl:flex-wrap xl:justify-end xl:overflow-visible xl:pb-0" aria-label="Filtrar por estado">
               <Button size="sm" variant={activeFilter === "Todos" ? "default" : "outline"} onClick={() => updateFilter("Todos")} aria-pressed={activeFilter === "Todos"} className="shrink-0 rounded-full">
-                Todos ({counts.Todos})
+                Todos
               </Button>
               {filters.map((filter) => (
                 <Button
@@ -136,14 +142,14 @@ export const CoordinatorCasesPage: React.FC = () => {
                     filter === "RESULT_AVAILABLE" && "border-success/20 bg-success/10 text-success",
                   )}
                 >
-                  {statusLabels[filter]} ({counts[filter]})
+                  {statusLabels[filter]}
                 </Button>
               ))}
             </div>
           </div>
 
           <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-[980px] text-left text-sm">
+            <table className="w-full min-w-[820px] text-left text-sm">
               <thead className="bg-slate-50 text-xs font-semibold text-muted dark:bg-slate-800">
                 <tr>
                   <th scope="col" className="whitespace-nowrap px-3 py-3">Identificador del caso</th>
@@ -153,7 +159,6 @@ export const CoordinatorCasesPage: React.FC = () => {
                     </button>
                   </th>
                   <th scope="col" className="whitespace-nowrap px-3 py-3">Estado</th>
-                  <th scope="col" className="whitespace-nowrap px-3 py-3">Investigador asignado</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-3">Última actualización</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-3">Acciones</th>
                 </tr>
@@ -165,14 +170,13 @@ export const CoordinatorCasesPage: React.FC = () => {
                   return (
                     <tr key={item.id} className="border-t border-slate-100 text-content transition-colors hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/60">
                       <td className="whitespace-nowrap px-3 py-2.5 font-medium">{item.referenceCode}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{formatDate(item.createdAt)}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{formatDate(item.receivedAt)}</td>
                       <td className="px-3 py-2.5">
                         <Badge variant={config.variant} className="whitespace-nowrap gap-1.5 px-3 py-1.5">
                           <StatusIcon className="h-4 w-4" aria-hidden="true" />{statusLabels[item.status]}
                         </Badge>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{accessByCase[item.id]?.map((userId) => students.find((student) => student.userId === userId)?.studentCode ?? userId).join(", ") || "—"}</td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">—</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">{formatDate(item.updatedAt)}</td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2">
                           <Button size="sm" variant="outline" onClick={() => openAccessDrawer(item)} className="whitespace-nowrap">
@@ -182,30 +186,29 @@ export const CoordinatorCasesPage: React.FC = () => {
                           <Link to={`/casos_academicos/${item.referenceCode}`} className="inline-flex h-8 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-muted transition-colors hover:border-primary/30 hover:text-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2">
                             <FileText className="h-4 w-4" aria-hidden="true" />Ver detalle
                           </Link>
-                          <IconButton icon={MoreVertical} label={`Más acciones para ${item.id}`} variant="ghost" className="h-8 w-8 shrink-0" onClick={() => setFeedback(`Más acciones · ${item.id}`)} />
                         </div>
                       </td>
                     </tr>
                   );
                 })}
-                {visibleCases.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-muted">No hay casos que coincidan con la búsqueda y el estado seleccionados.</td></tr>
+                {!loading && visibleCases.length === 0 && (
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-sm text-muted">No hay casos que coincidan con la búsqueda y el estado seleccionados.</td></tr>
                 )}
               </tbody>
             </table>
           </div>
 
-          {!cases && !error && <p role="status" className="mt-3 text-sm text-muted">Cargando casos académicos…</p>}
+          {loading && <p role="status" className="mt-3 text-sm text-muted">Cargando casos académicos…</p>}
           {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
           {feedback && <p role="status" className="mt-3 rounded-lg bg-primary/10 px-3 py-2 text-xs text-primary-strong">{feedback}</p>}
           <div className="flex flex-col gap-3 pt-4 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
-            <span>Mostrando {visibleCases.length} de {filteredCases.length} casos</span>
+            <span>Mostrando {visibleCases.length} de {response?.totalItems ?? 0} casos</span>
             <nav aria-label="Paginación de casos" className="flex items-center gap-1">
               <Button size="icon" variant="outline" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} aria-label="Página anterior"><ArrowLeft className="h-4 w-4" aria-hidden="true" /></Button>
               {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => (
                 <Button key={number} size="icon" variant={number === page ? "default" : "outline"} onClick={() => setPage(number)} aria-label={`Página ${number}`} aria-current={number === page ? "page" : undefined}>{number}</Button>
               ))}
-              <Button size="icon" variant="outline" disabled={page === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} aria-label="Página siguiente"><ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>
+              <Button size="icon" variant="outline" disabled={page === pageCount || pageCount === 1} onClick={() => setPage((value) => Math.min(pageCount, value + 1))} aria-label="Página siguiente"><ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>
             </nav>
           </div>
         </CardContent>
@@ -216,10 +219,10 @@ export const CoordinatorCasesPage: React.FC = () => {
         caseId={activeCase?.referenceCode ?? ""}
         caseStatus={activeCase ? statusLabels[activeCase.status] : ""}
         caseUuid={activeCase?.id ?? ""}
-        onSave={async (selectedIds, expectedVersion) => {
+        canManage={activeCase?.status !== "INPUT_CHANGE_DRAFT" && activeCase?.status !== "INPUT_CHANGE_REVIEW"}
+        onSave={async (selectedIds) => {
           if (!activeCase) return;
-          const assignment = await saveStudentAssignmentsForCase(activeCase.id, { studentIds: selectedIds, expectedVersion });
-          setAccessByCase((current) => ({ ...current, [activeCase.id]: assignment.studentIds }));
+          await saveStudentAssignmentsForCase(activeCase.id, { researcherIds: selectedIds });
           setFeedback(`Acceso de investigadores actualizado para ${activeCase.referenceCode}.`);
         }}
       />

@@ -20,14 +20,14 @@ La pestaña `Docencia` contiene las funciones académicas. Las funciones de `Mis
 
 ### Objetivo
 
-Consultar casos académicos, identificar casos sin asignar y asignarlos o reasignarlos a investigadores autorizados.
+Consultar los casos académicos y gestionar las asignaciones de investigadores autorizados.
 
 ### Elementos de la vista
 
-- Título `Casos de docencia`.
+- Título `Casos Académicos`.
 - Descripción breve.
-- Buscador por identificador del caso o investigador.
-- Filtros: `Todos`, `Sin asignar`, `Asignado`, `En procesamiento`, `Resultado cargado`, `Corrección requerida` y `Disponible para el paciente`.
+- Buscador por código del caso o nombre del estudio.
+- Filtros: `Todos`, `Archivos recibidos`, `En procesamiento`, `Cambio en edición`, `Cambio pendiente de revisión`, `Resultado cargado` y `Disponible para el paciente`.
 - Tabla o lista de casos.
 
 ### Columnas del listado
@@ -35,15 +35,15 @@ Consultar casos académicos, identificar casos sin asignar y asignarlos o reasig
 - Identificador del caso.
 - Fecha de recepción.
 - Estado.
-- Investigador asignado.
 - Última actualización.
 - Acciones.
+
+El investigador asignado se consulta desde el panel de gestión de acceso, no como columna del listado. Búsqueda, estado, orden y paginación se resuelven en el backend.
 
 ### Acciones del listado
 
 - `Ver detalle`.
-- `Asignar investigador` cuando no exista asignación.
-- `Cambiar asignación` cuando ya exista y el permiso lo permita.
+- `Gestionar acceso`, que permite consultar asignaciones vigentes y editar el conjunto cuando el estado del caso lo permite.
 
 ### Estados de la vista
 
@@ -53,29 +53,32 @@ Consultar casos académicos, identificar casos sin asignar y asignarlos o reasig
 - Error al cargar.
 - Caso actualizado correctamente.
 
-## 3. Panel lateral — Asignar o cambiar investigador
+## 3. Panel lateral — Gestionar acceso de investigadores
 
 El panel aparece desde el lado derecho y mantiene visible la bandeja de casos.
 
 ### Contenido
 
-- Encabezado `Asignar investigador` o `Cambiar asignación`.
+- Encabezado `Gestionar acceso de investigadores`.
 - Botón para cerrar.
-- Identificador, fecha y estado del caso.
-- Investigador actual, si existe.
+- Identificador y estado del caso.
+- Solo investigadores asignados al abrir. Si no hay asignaciones, mostrar un mensaje vacío con orientación para buscar.
 - Buscador por nombre, correo o identificador institucional.
-- Lista de investigadores autorizados.
-- Cantidad de casos asignados por investigador, si está disponible.
-- Selección de un investigador.
-- Botón `Asignar` o `Guardar cambio`.
+- Consultar el directorio solo después de que el coordinador escriba una búsqueda.
+- Lista de investigadores autorizados que coinciden con la búsqueda.
+- Selección de varios investigadores; conservar las selecciones al cambiar de búsqueda.
+- Botón `Guardar cambios`.
 - Botón `Cancelar`.
 
 ### Reglas
 
-- El botón principal permanece deshabilitado sin una selección.
-- Cambiar una asignación requiere confirmación.
-- La interfaz se actualiza solo después de una respuesta exitosa del backend.
+- El botón principal permanece deshabilitado si no hay cambios.
+- Los casos en `INPUT_CHANGE_DRAFT` o `INPUT_CHANGE_REVIEW` son de solo consulta; deshabilitar selección y guardado.
+- Guardar reemplaza atómicamente el conjunto de asignaciones.
+- La interfaz confirma el guardado solo después de una respuesta exitosa del backend y mantiene abierto el panel.
 - Si falla la operación, se conserva la selección y se permite reintentar.
+- Sin búsqueda, mostrar solo las asignaciones vigentes; sin asignaciones, indicar que no hay investigadores asignados e invitar a buscar.
+- Con búsqueda, mostrar coincidencias del directorio junto con cualquier persona asignada que siga fuera de los resultados; buscar no cambia ni guarda la selección.
 
 ## 4. Detalle del caso
 
